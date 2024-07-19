@@ -55,6 +55,17 @@ void drag_end (GtkWidget *, GdkDragContext *, gpointer)
     curmon = -1;
 }
 
+void show_menu (void)
+{
+    char *label = g_strdup_printf ("Monitor %d", curmon);
+    GtkWidget *item = gtk_menu_item_new_with_label (label);
+    g_free (label);
+    GtkWidget *menu = gtk_menu_new ();
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    gtk_widget_show_all (menu);
+    gtk_menu_popup_at_pointer (GTK_MENU (menu), gtk_get_current_event ());
+}
+
 void click (GtkWidget *, GdkEventButton ev, gpointer)
 {
     curmon = -1;
@@ -63,9 +74,16 @@ void click (GtkWidget *, GdkEventButton ev, gpointer)
         if (ev.x > mons[m].x && ev.x < mons[m].x + mons[m].width
             && ev.y > mons[m].y && ev.y < mons[m].y + mons[m].height)
         {
-            mousex = ev.x - mons[m].x;
-            mousey = ev.y - mons[m].y;
             curmon = m;
+            switch (ev.button)
+            {
+                case 1 :    mousex = ev.x - mons[m].x;
+                            mousey = ev.y - mons[m].y;
+                            break;
+
+                case 3 :    show_menu ();
+                            break;
+            }
         }
     }
 }
