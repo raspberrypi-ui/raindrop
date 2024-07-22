@@ -50,20 +50,24 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
     GdkRGBA fg = { 1.0, 1.0, 1.0, 1.0 };
     GdkRGBA bk = { 0.0, 0.0, 0.0, 1.0 };
 
+    // window fill
     gdk_cairo_set_source_rgba (cr, &bg);
     cairo_rectangle (cr, 0, 0, screenw, screenh);
     cairo_fill (cr);
 
     for (m = 0; m < MAX_MONS; m++)
     {
+        // background
         gdk_cairo_set_source_rgba (cr, &fg);
         cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(screen_w (mons[m])), SCALE(screen_h (mons[m])));
         cairo_fill (cr);
 
+        // border
         gdk_cairo_set_source_rgba (cr, &bk);
         cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(screen_w (mons[m])), SCALE(screen_h (mons[m])));
         cairo_stroke (cr);
 
+        // text label
         cairo_save (cr);
         font = pango_font_description_from_string ("sans");
         charwid = SCALE (mons[m].width) / strlen (mons[m].name);
@@ -91,12 +95,13 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
         mons[curmon].x = UPSCALE(x - mousex);
         mons[curmon].y = UPSCALE(y - mousey);
 
+        // constrain to screen
         if (mons[curmon].x < 0) mons[curmon].x = 0;
         if (mons[curmon].y < 0) mons[curmon].y = 0;
         if (SCALE(mons[curmon].x + screen_w (mons[curmon])) > screenw) mons[curmon].x = UPSCALE(screenw - SCALE(screen_w (mons[curmon])));
         if (SCALE(mons[curmon].y + screen_h (mons[curmon])) > screenh) mons[curmon].y = UPSCALE(screenh - SCALE(screen_h (mons[curmon])));
 
-        // snap...
+        // snap top and left to other windows bottom or right, or to 0,0
         for (m = 0; m < MAX_MONS; m++)
         {
             xs = m != curmon ? mons[m].x + screen_w (mons[m]) : 0;
@@ -130,6 +135,21 @@ void add_resolution (GtkWidget *menu, int width, int height)
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
 
+void set_frequency (GtkMenuItem *item, gpointer)
+{
+    sscanf (gtk_menu_item_get_label (item), "%fHz", &(mons[curmon].freq));
+}
+
+void add_frequency (GtkWidget *menu, float freq)
+{
+    char *label = g_strdup_printf ("%.3fHz", freq);
+    GtkWidget *item = gtk_check_menu_item_new_with_label (label);
+    g_free (label);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[curmon].freq == freq);
+    g_signal_connect (item, "activate", G_CALLBACK (set_frequency), NULL);
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+}
+
 void set_orientation (GtkMenuItem *item, gpointer)
 {
     sscanf (gtk_menu_item_get_label (item), "%d", &(mons[curmon].rotation));
@@ -158,6 +178,14 @@ void show_menu (void)
     add_resolution (rmenu, 800, 600);
     item = gtk_menu_item_new_with_label ("Resolution");
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), rmenu);
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+
+    GtkWidget *fmenu = gtk_menu_new ();
+    add_frequency (fmenu, 50.00);
+    add_frequency (fmenu, 59.94);
+    add_frequency (fmenu, 60.00);
+    item = gtk_menu_item_new_with_label ("Frequency");
+    gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), fmenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
     GtkWidget *omenu = gtk_menu_new ();
@@ -203,6 +231,7 @@ int main (int argc, char *argv[])
     mons[0].y = 0;
     mons[0].width = 3840;
     mons[0].height = 2160;
+    mons[0].freq = 60.0;
     mons[1].rotation = 0;
     mons[0].name = g_strdup ("HDMI-A-1");
 
@@ -210,6 +239,7 @@ int main (int argc, char *argv[])
     mons[1].y = 0;
     mons[1].width = 1920;
     mons[1].height = 1080;
+    mons[1].freq = 59.94;
     mons[1].rotation = 90;
     mons[1].name = g_strdup ("HDMI-A-2");
 
@@ -230,7 +260,7 @@ int main (int argc, char *argv[])
     gtk_widget_show_all (win);
     screenw = gtk_widget_get_allocated_width (GTK_WIDGET (da));
     screenh = gtk_widget_get_allocated_height (GTK_WIDGET (da));
-    
+
     gtk_main ();
     return 0;
 }
