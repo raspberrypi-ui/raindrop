@@ -1,4 +1,5 @@
 #include <gtk/gtk.h>
+#include <glib/gi18n.h>
 
 typedef struct {
     char *name;
@@ -176,7 +177,7 @@ void show_menu (void)
     add_resolution (rmenu, 3840, 2160);
     add_resolution (rmenu, 1920, 1080);
     add_resolution (rmenu, 800, 600);
-    item = gtk_menu_item_new_with_label ("Resolution");
+    item = gtk_menu_item_new_with_label (_("Resolution"));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), rmenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
@@ -184,7 +185,7 @@ void show_menu (void)
     add_frequency (fmenu, 50.00);
     add_frequency (fmenu, 59.94);
     add_frequency (fmenu, 60.00);
-    item = gtk_menu_item_new_with_label ("Frequency");
+    item = gtk_menu_item_new_with_label (_("Frequency"));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), fmenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
@@ -193,7 +194,7 @@ void show_menu (void)
     add_orientation (omenu, 90);
     add_orientation (omenu, 180);
     add_orientation (omenu, 270);
-    item = gtk_menu_item_new_with_label ("Orientation");
+    item = gtk_menu_item_new_with_label (_("Orientation"));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), omenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
