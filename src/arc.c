@@ -30,14 +30,14 @@ void end_program (GtkWidget *, GdkEvent *, gpointer)
 
 int screen_w (monitor_t mon)
 {
-    if (mon.rotation == 90 || mon.rotation == 270) return SCALE(mon.height);
-    else return SCALE(mon.width);
+    if (mon.rotation == 90 || mon.rotation == 270) return mon.height;
+    else return mon.width;
 }
 
 int screen_h (monitor_t mon)
 {
-    if (mon.rotation == 90 || mon.rotation == 270) return SCALE(mon.width);
-    else return SCALE(mon.height);
+    if (mon.rotation == 90 || mon.rotation == 270) return mon.width;
+    else return mon.height;
 }
 
 void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
@@ -57,11 +57,11 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
     for (m = 0; m < MAX_MONS; m++)
     {
         gdk_cairo_set_source_rgba (cr, &fg);
-        cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), screen_w (mons[m]), screen_h (mons[m]));
+        cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(screen_w (mons[m])), SCALE(screen_h (mons[m])));
         cairo_fill (cr);
 
         gdk_cairo_set_source_rgba (cr, &bk);
-        cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), screen_w (mons[m]), screen_h (mons[m]));
+        cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(screen_w (mons[m])), SCALE(screen_h (mons[m])));
         cairo_stroke (cr);
 
         cairo_save (cr);
@@ -70,14 +70,13 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
         pango_layout_set_text (layout, mons[m].name, -1);
         pango_layout_set_font_description (layout, font);
         pango_layout_get_pixel_size (layout, &w, &h);
-        cairo_move_to (cr, SCALE(mons[m].x) + screen_w (mons[m]) / 2, SCALE(mons[m].y) + screen_h (mons[m]) / 2);
+        cairo_move_to (cr, SCALE(mons[m].x + screen_w (mons[m]) / 2), SCALE(mons[m].y + screen_h (mons[m]) / 2));
         cairo_rotate (cr, mons[m].rotation * G_PI / 180.0);
         cairo_rel_move_to (cr, -w / 2, -h / 2);
         pango_cairo_show_layout (cr, layout);
         cairo_restore (cr);
     }
 }
-
 
 #define SNAP_DISTANCE 200
 
@@ -92,8 +91,8 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
 
         if (mons[curmon].x < 0) mons[curmon].x = 0;
         if (mons[curmon].y < 0) mons[curmon].y = 0;
-        if (SCALE(mons[curmon].x) + screen_w (mons[curmon]) > screenw) mons[curmon].x = UPSCALE(screenw - screen_w (mons[curmon]));
-        if (SCALE(mons[curmon].y) + screen_h (mons[curmon]) > screenh) mons[curmon].y = UPSCALE(screenh - screen_h (mons[curmon]));
+        if (SCALE(mons[curmon].x + screen_w (mons[curmon])) > screenw) mons[curmon].x = UPSCALE(screenw - SCALE(screen_w (mons[curmon])));
+        if (SCALE(mons[curmon].y + screen_h (mons[curmon])) > screenh) mons[curmon].y = UPSCALE(screenh - SCALE(screen_h (mons[curmon])));
 
         // snap...
         for (m = 0; m < MAX_MONS; m++)
@@ -105,18 +104,8 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
             }
             else
             {
-                xs = mons[m].x;
-                ys = mons[m].y;
-                if (mons[m].rotation == 90 || mons[m].rotation == 270)
-                {
-                    xs += mons[m].height;
-                    ys += mons[m].width;
-                }
-                else
-                {
-                    xs += mons[m].width;
-                    ys += mons[m].height;
-                }
+                xs = mons[m].x + screen_w (mons[m]);
+                ys = mons[m].y + screen_h (mons[m]);
             }
             if (mons[curmon].x > xs - SNAP_DISTANCE && mons[curmon].x < xs + SNAP_DISTANCE) mons[curmon].x = xs;
             if (mons[curmon].y > ys - SNAP_DISTANCE && mons[curmon].y < ys + SNAP_DISTANCE) mons[curmon].y = ys;
@@ -197,8 +186,8 @@ void click (GtkWidget *, GdkEventButton ev, gpointer)
     curmon = -1;
     for (m = 0; m < MAX_MONS; m++)
     {
-        if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x) + screen_w (mons[m])
-            && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y) + screen_h (mons[m]))
+        if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x + screen_w (mons[m]))
+            && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y + screen_h (mons[m])))
         {
             curmon = m;
             switch (ev.button)
