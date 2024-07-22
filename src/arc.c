@@ -2,6 +2,12 @@
 #include <glib/gi18n.h>
 
 typedef struct {
+    int width;
+    int height;
+    float freq;
+} output_mode_t;
+
+typedef struct {
     char *name;
     int width;
     int height;
@@ -9,6 +15,7 @@ typedef struct {
     int y;
     int rotation;
     float freq;
+    GList *modes;
 } monitor_t;
 
 #define MAX_MONS 2
@@ -120,9 +127,36 @@ void drag_end (GtkWidget *, GdkDragContext *, gpointer)
     curmon = -1;
 }
 
+void check_frequency (void)
+{
+    GList *model;
+    output_mode_t *mode;
+
+    // set the highest frequency for this mode
+    model = mons[curmon].modes;
+    while (model)
+    {
+        mode = (output_mode_t *) model->data;
+        if (mons[curmon].width == mode->width || mons[curmon].height == mode->height)
+        {
+            mons[curmon].freq = mode->freq;
+            return;
+        }
+        model = model->next;
+    }
+}
+
 void set_resolution (GtkMenuItem *item, gpointer)
 {
-    sscanf (gtk_menu_item_get_label (item), "%dx%d", &(mons[curmon].width), &(mons[curmon].height));
+    int w, h;
+
+    sscanf (gtk_menu_item_get_label (item), "%dx%d", &w, &h);
+    if (w != mons[curmon].width || h != mons[curmon].height)
+    {
+        mons[curmon].width = w;
+        mons[curmon].height = h;
+        check_frequency ();
+    }
     gtk_widget_queue_draw (da);
 }
 
@@ -169,27 +203,45 @@ void add_orientation (GtkWidget *menu, int rotation)
 
 void show_menu (void)
 {
-    GtkWidget *item;
+    GList *model;
+    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu;
+    int lastw, lasth;
+    output_mode_t *mode;
 
-    GtkWidget *menu = gtk_menu_new ();
+    menu = gtk_menu_new ();
 
-    GtkWidget *rmenu = gtk_menu_new ();
-    add_resolution (rmenu, 3840, 2160);
-    add_resolution (rmenu, 1920, 1080);
-    add_resolution (rmenu, 800, 600);
+    // resolution and frequency menus from mode data for this monitor
+    // pre-sort list here?
+    rmenu = gtk_menu_new ();
+    fmenu = gtk_menu_new ();
+
+    lastw = 0;
+    lasth = 0;
+    model = mons[curmon].modes;
+    while (model)
+    {
+        mode = (output_mode_t *) model->data;
+        if (lastw != mode->width || lasth != mode->height)
+        {
+            add_resolution (rmenu, mode->width, mode->height);
+            lastw = mode->width;
+            lasth = mode->height;
+        }
+        if (mode->width == mons[curmon].width && mode->height == mons[curmon].height)
+            add_frequency (fmenu, mode->freq);
+        model = model->next;
+    }
+
     item = gtk_menu_item_new_with_label (_("Resolution"));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), rmenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
-    GtkWidget *fmenu = gtk_menu_new ();
-    add_frequency (fmenu, 50.00);
-    add_frequency (fmenu, 59.94);
-    add_frequency (fmenu, 60.00);
     item = gtk_menu_item_new_with_label (_("Frequency"));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), fmenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
-    GtkWidget *omenu = gtk_menu_new ();
+    // orientation menu - generic
+    omenu = gtk_menu_new ();
     add_orientation (omenu, 0);
     add_orientation (omenu, 90);
     add_orientation (omenu, 180);
@@ -226,23 +278,43 @@ void click (GtkWidget *, GdkEventButton ev, gpointer)
     }
 }
 
+void add_mode (int monitor, int w, int h, float f)
+{
+    output_mode_t *mod;
+    mod = g_new0 (output_mode_t, 1);
+    mod->width = w;
+    mod->height = h;
+    mod->freq = f;
+    mons[monitor].modes = g_list_append (mons[monitor].modes, mod);
+}
+
 int main (int argc, char *argv[])
 {
     mons[0].x = 0;
     mons[0].y = 0;
     mons[0].width = 3840;
     mons[0].height = 2160;
-    mons[0].freq = 60.0;
-    mons[1].rotation = 0;
+    mons[0].freq = 59.94;
+    mons[0].rotation = 0;
     mons[0].name = g_strdup ("HDMI-A-1");
+    mons[0].modes = NULL;
+    add_mode (0, 3840, 2160, 60.0);
+    add_mode (0, 3840, 2160, 59.94);
+    add_mode (0, 3840, 2160, 50.0);
+    add_mode (0, 1920, 1080, 60.0);
+    add_mode (0, 1920, 1080, 50.0);
+    add_mode (0, 1600, 1200, 50.0);
+    add_mode (0, 800, 600, 50.0);
 
     mons[1].x = 3840;
     mons[1].y = 0;
     mons[1].width = 1920;
     mons[1].height = 1080;
-    mons[1].freq = 59.94;
+    mons[1].freq = 50.0;
     mons[1].rotation = 90;
     mons[1].name = g_strdup ("HDMI-A-2");
+    mons[1].modes = NULL;
+    add_mode (1, 1920, 1080, 50.0);
 
     gtk_init (&argc, &argv);
     GtkWidget *win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
