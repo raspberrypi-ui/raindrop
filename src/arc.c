@@ -1,11 +1,32 @@
 #include <gtk/gtk.h>
 
+typedef enum {
+        NORMAL,
+        LEFT,
+        INVERT,
+        RIGHT
+} orient_t;
+
+typedef struct {
+    char *name;
+    int width;
+    int height;
+    int x;
+    int y;
+    float freq;
+    orient_t orient;
+} monitor_t;
+
 #define MAX_MONS 2
 
-GdkRectangle mons[MAX_MONS];
+monitor_t mons[MAX_MONS];
 int mousex, mousey;
 int screenw, screenh;
 int curmon;
+int scalen = 1, scaled = 20;
+
+#define SCALE(n) (((n)*scalen)/scaled)
+#define UPSCALE(n) (((n)*scaled)/scalen)
 
 void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
@@ -25,11 +46,11 @@ void draw_function (GtkDrawingArea *da, cairo_t *cr, gpointer)
     for (int m = 0; m < MAX_MONS; m++)
     {
         gdk_cairo_set_source_rgba (cr, &fg);
-        cairo_rectangle (cr, mons[m].x, mons[m].y, mons[m].width, mons[m].height);
+        cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(mons[m].width), SCALE(mons[m].height));
         cairo_fill (cr);
 
         gdk_cairo_set_source_rgba (cr, &bk);
-        cairo_rectangle (cr, mons[m].x, mons[m].y, mons[m].width, mons[m].height);
+        cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(mons[m].width), SCALE(mons[m].height));
         cairo_stroke (cr);
     }
 }
@@ -38,13 +59,13 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
 {
     if (curmon != -1)
     {
-        mons[curmon].x = x - mousex;
-        mons[curmon].y = y - mousey;
+        mons[curmon].x = UPSCALE(x - mousex);
+        mons[curmon].y = UPSCALE(y - mousey);
 
         if (mons[curmon].x < 0) mons[curmon].x = 0;
         if (mons[curmon].y < 0) mons[curmon].y = 0;
-        if (mons[curmon].x + mons[curmon].width > screenw) mons[curmon].x = screenw - mons[curmon].width;
-        if (mons[curmon].y + mons[curmon].height > screenh) mons[curmon].y = screenh - mons[curmon].height;
+        if (SCALE(mons[curmon].x + mons[curmon].width) > screenw) mons[curmon].x = UPSCALE(screenw - SCALE(mons[curmon].width));
+        if (SCALE(mons[curmon].y + mons[curmon].height) > screenh) mons[curmon].y = UPSCALE(screenh - SCALE(mons[curmon].height));
 
         gtk_widget_queue_draw (da);
     }
@@ -57,9 +78,7 @@ void drag_end (GtkWidget *, GdkDragContext *, gpointer)
 
 void show_menu (void)
 {
-    char *label = g_strdup_printf ("Monitor %d", curmon);
-    GtkWidget *item = gtk_menu_item_new_with_label (label);
-    g_free (label);
+    GtkWidget *item = gtk_menu_item_new_with_label (mons[curmon].name);
     GtkWidget *menu = gtk_menu_new ();
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     gtk_widget_show_all (menu);
@@ -71,14 +90,14 @@ void click (GtkWidget *, GdkEventButton ev, gpointer)
     curmon = -1;
     for (int m = 0; m < MAX_MONS; m++)
     {
-        if (ev.x > mons[m].x && ev.x < mons[m].x + mons[m].width
-            && ev.y > mons[m].y && ev.y < mons[m].y + mons[m].height)
+        if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x + mons[m].width)
+            && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y + mons[m].height))
         {
             curmon = m;
             switch (ev.button)
             {
-                case 1 :    mousex = ev.x - mons[m].x;
-                            mousey = ev.y - mons[m].y;
+                case 1 :    mousex = ev.x - SCALE(mons[m].x);
+                            mousey = ev.y - SCALE(mons[m].y);
                             break;
 
                 case 3 :    show_menu ();
@@ -90,15 +109,17 @@ void click (GtkWidget *, GdkEventButton ev, gpointer)
 
 int main (int argc, char *argv[])
 {
-    mons[0].x = 50;
-    mons[0].y = 50;
-    mons[0].width = 50;
-    mons[0].height = 50;
+    mons[0].x = 0;
+    mons[0].y = 0;
+    mons[0].width = 3840;
+    mons[0].height = 2160;
+    mons[0].name = g_strdup ("HDMI-A-1");
 
-    mons[1].x = 200;
-    mons[1].y = 150;
-    mons[1].width = 75;
-    mons[1].height = 50;
+    mons[1].x = 3840;
+    mons[1].y = 0;
+    mons[1].width = 1920;
+    mons[1].height = 1080;
+    mons[1].name = g_strdup ("HDMI-A-2");
 
     gtk_init (&argc, &argv);
     GtkWidget *win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -111,7 +132,7 @@ int main (int argc, char *argv[])
     g_signal_connect (da, "button-press-event", G_CALLBACK (click), NULL);
     g_signal_connect (da, "drag-motion", G_CALLBACK (drag_motion), NULL);
     g_signal_connect (da, "drag-end", G_CALLBACK (drag_end), NULL);
-    gtk_widget_set_size_request (da, 300, 200);
+    gtk_widget_set_size_request (da, 500, 400);
     gtk_container_add (GTK_CONTAINER (win), da);
 
     gtk_widget_show_all (win);
