@@ -78,8 +78,13 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
     }
 }
 
+
+#define SNAP_DISTANCE 200
+
 void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
 {
+    int m, xs, ys;
+
     if (curmon != -1)
     {
         mons[curmon].x = UPSCALE(x - mousex);
@@ -89,6 +94,33 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
         if (mons[curmon].y < 0) mons[curmon].y = 0;
         if (SCALE(mons[curmon].x) + screen_w (mons[curmon]) > screenw) mons[curmon].x = UPSCALE(screenw - screen_w (mons[curmon]));
         if (SCALE(mons[curmon].y) + screen_h (mons[curmon]) > screenh) mons[curmon].y = UPSCALE(screenh - screen_h (mons[curmon]));
+
+        // snap...
+        for (m = 0; m < MAX_MONS; m++)
+        {
+            if (m == curmon)
+            {
+                xs = 0;
+                ys = 0;
+            }
+            else
+            {
+                xs = mons[m].x;
+                ys = mons[m].y;
+                if (mons[m].rotation == 90 || mons[m].rotation == 270)
+                {
+                    xs += mons[m].height;
+                    ys += mons[m].width;
+                }
+                else
+                {
+                    xs += mons[m].width;
+                    ys += mons[m].height;
+                }
+            }
+            if (mons[curmon].x > xs - SNAP_DISTANCE && mons[curmon].x < xs + SNAP_DISTANCE) mons[curmon].x = xs;
+            if (mons[curmon].y > ys - SNAP_DISTANCE && mons[curmon].y < ys + SNAP_DISTANCE) mons[curmon].y = ys;
+        }
 
         gtk_widget_queue_draw (da);
     }
@@ -160,8 +192,10 @@ void show_menu (void)
 
 void click (GtkWidget *, GdkEventButton ev, gpointer)
 {
+    int m;
+
     curmon = -1;
-    for (int m = 0; m < MAX_MONS; m++)
+    for (m = 0; m < MAX_MONS; m++)
     {
         if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x) + screen_w (mons[m])
             && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y) + screen_h (mons[m]))
