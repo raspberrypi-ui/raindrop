@@ -44,7 +44,7 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
 {
     PangoLayout *layout;
     PangoFontDescription *font;
-    int m, w, h;
+    int m, w, h, charwid;
 
     GdkRGBA bg = { 0.25, 0.25, 0.25, 1.0 };
     GdkRGBA fg = { 1.0, 1.0, 1.0, 1.0 };
@@ -66,6 +66,8 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
 
         cairo_save (cr);
         font = pango_font_description_from_string ("sans");
+        charwid = SCALE (mons[m].width) / strlen (mons[m].name);
+        pango_font_description_set_size (font, charwid * PANGO_SCALE);
         layout = pango_cairo_create_layout (cr);
         pango_layout_set_text (layout, mons[m].name, -1);
         pango_layout_set_font_description (layout, font);
@@ -97,16 +99,8 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
         // snap...
         for (m = 0; m < MAX_MONS; m++)
         {
-            if (m == curmon)
-            {
-                xs = 0;
-                ys = 0;
-            }
-            else
-            {
-                xs = mons[m].x + screen_w (mons[m]);
-                ys = mons[m].y + screen_h (mons[m]);
-            }
+            xs = m != curmon ? mons[m].x + screen_w (mons[m]) : 0;
+            ys = m != curmon ? mons[m].y + screen_h (mons[m]) : 0;
             if (mons[curmon].x > xs - SNAP_DISTANCE && mons[curmon].x < xs + SNAP_DISTANCE) mons[curmon].x = xs;
             if (mons[curmon].y > ys - SNAP_DISTANCE && mons[curmon].y < ys + SNAP_DISTANCE) mons[curmon].y = ys;
         }
