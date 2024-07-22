@@ -28,8 +28,18 @@ void end_program (GtkWidget *, GdkEvent *, gpointer)
     gtk_main_quit ();
 }
 
+gboolean rotated (int rot)
+{
+    if (rot == 90 || rot == 270) return TRUE;
+    return FALSE;
+}
+
 void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
 {
+    PangoLayout *layout;
+    PangoFontDescription *font;
+    int m, w, h;
+
     GdkRGBA bg = { 0.25, 0.25, 0.25, 1.0 };
     GdkRGBA fg = { 1.0, 1.0, 1.0, 1.0 };
     GdkRGBA bk = { 0.0, 0.0, 0.0, 1.0 };
@@ -38,7 +48,7 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
     cairo_rectangle (cr, 0, 0, screenw, screenh);
     cairo_fill (cr);
 
-    for (int m = 0; m < MAX_MONS; m++)
+    for (m = 0; m < MAX_MONS; m++)
     {
         gdk_cairo_set_source_rgba (cr, &fg);
         if (mons[m].rotation == 90 || mons[m].rotation == 270)
@@ -53,13 +63,22 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
         else
             cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(mons[m].width), SCALE(mons[m].height));
         cairo_stroke (cr);
-    }
-}
 
-gboolean rotated (int rot)
-{
-    if (rot == 90 || rot == 270) return TRUE;
-    return FALSE;
+        cairo_save (cr);
+        font = pango_font_description_from_string ("sans");
+        layout = pango_cairo_create_layout (cr);
+        pango_layout_set_text (layout, mons[m].name, -1);
+        pango_layout_set_font_description (layout, font);
+        pango_layout_get_pixel_size (layout, &w, &h);
+        if (rotated (mons[m].rotation))
+            cairo_move_to (cr, SCALE(mons[m].x + mons[m].height / 2), SCALE(mons[m].y + mons[m].width / 2));
+        else
+            cairo_move_to (cr, SCALE(mons[m].x + mons[m].width / 2), SCALE(mons[m].y + mons[m].height / 2));
+        cairo_rotate (cr, mons[m].rotation * G_PI / 180.0);
+        cairo_rel_move_to (cr, - w / 2, - h / 2);
+        pango_cairo_show_layout (cr, layout);
+        cairo_restore (cr);
+    }
 }
 
 void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
