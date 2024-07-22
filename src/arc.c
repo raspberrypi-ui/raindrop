@@ -20,18 +20,24 @@ int scalen = 1, scaled = 20;
 
 GtkWidget *da;
 
-#define SCALE(n) (((n)*scalen)/scaled)
-#define UPSCALE(n) (((n)*scaled)/scalen)
+#define SCALE(n) (((n) * scalen) / scaled)
+#define UPSCALE(n) (((n) * scaled) / scalen)
 
 void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
     gtk_main_quit ();
 }
 
-gboolean rotated (int rot)
+int screen_w (monitor_t mon)
 {
-    if (rot == 90 || rot == 270) return TRUE;
-    return FALSE;
+    if (mon.rotation == 90 || mon.rotation == 270) return SCALE(mon.height);
+    else return SCALE(mon.width);
+}
+
+int screen_h (monitor_t mon)
+{
+    if (mon.rotation == 90 || mon.rotation == 270) return SCALE(mon.width);
+    else return SCALE(mon.height);
 }
 
 void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
@@ -51,17 +57,11 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
     for (m = 0; m < MAX_MONS; m++)
     {
         gdk_cairo_set_source_rgba (cr, &fg);
-        if (mons[m].rotation == 90 || mons[m].rotation == 270)
-            cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(mons[m].height), SCALE(mons[m].width));
-        else
-            cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(mons[m].width), SCALE(mons[m].height));
+        cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), screen_w (mons[m]), screen_h (mons[m]));
         cairo_fill (cr);
 
         gdk_cairo_set_source_rgba (cr, &bk);
-        if (mons[m].rotation == 90 || mons[m].rotation == 270)
-            cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(mons[m].height), SCALE(mons[m].width));
-        else
-            cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(mons[m].width), SCALE(mons[m].height));
+        cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), screen_w (mons[m]), screen_h (mons[m]));
         cairo_stroke (cr);
 
         cairo_save (cr);
@@ -70,12 +70,9 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
         pango_layout_set_text (layout, mons[m].name, -1);
         pango_layout_set_font_description (layout, font);
         pango_layout_get_pixel_size (layout, &w, &h);
-        if (rotated (mons[m].rotation))
-            cairo_move_to (cr, SCALE(mons[m].x + mons[m].height / 2), SCALE(mons[m].y + mons[m].width / 2));
-        else
-            cairo_move_to (cr, SCALE(mons[m].x + mons[m].width / 2), SCALE(mons[m].y + mons[m].height / 2));
+        cairo_move_to (cr, SCALE(mons[m].x) + screen_w (mons[m]) / 2, SCALE(mons[m].y) + screen_h (mons[m]) / 2);
         cairo_rotate (cr, mons[m].rotation * G_PI / 180.0);
-        cairo_rel_move_to (cr, - w / 2, - h / 2);
+        cairo_rel_move_to (cr, -w / 2, -h / 2);
         pango_cairo_show_layout (cr, layout);
         cairo_restore (cr);
     }
@@ -83,7 +80,6 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
 
 void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
 {
-    int w, h;
     if (curmon != -1)
     {
         mons[curmon].x = UPSCALE(x - mousex);
@@ -91,10 +87,8 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
 
         if (mons[curmon].x < 0) mons[curmon].x = 0;
         if (mons[curmon].y < 0) mons[curmon].y = 0;
-        w = rotated (mons[curmon].rotation) ? mons[curmon].height : mons[curmon].width;
-        h = rotated (mons[curmon].rotation) ? mons[curmon].width : mons[curmon].height;
-        if (SCALE(mons[curmon].x + w) > screenw) mons[curmon].x = UPSCALE(screenw - SCALE(w));
-        if (SCALE(mons[curmon].y + h) > screenh) mons[curmon].y = UPSCALE(screenh - SCALE(h));
+        if (SCALE(mons[curmon].x) + screen_w (mons[curmon]) > screenw) mons[curmon].x = UPSCALE(screenw - screen_w (mons[curmon]));
+        if (SCALE(mons[curmon].y) + screen_h (mons[curmon]) > screenh) mons[curmon].y = UPSCALE(screenh - screen_h (mons[curmon]));
 
         gtk_widget_queue_draw (da);
     }
@@ -166,15 +160,11 @@ void show_menu (void)
 
 void click (GtkWidget *, GdkEventButton ev, gpointer)
 {
-    int w, h;
     curmon = -1;
     for (int m = 0; m < MAX_MONS; m++)
     {
-        w = rotated (mons[m].rotation) ? mons[m].height : mons[m].width;
-        h = rotated (mons[m].rotation) ? mons[m].width : mons[m].height;
-
-        if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x + w)
-            && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y + h))
+        if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x) + screen_w (mons[m])
+            && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y) + screen_h (mons[m]))
         {
             curmon = m;
             switch (ev.button)
@@ -196,12 +186,14 @@ int main (int argc, char *argv[])
     mons[0].y = 0;
     mons[0].width = 3840;
     mons[0].height = 2160;
+    mons[1].rotation = 0;
     mons[0].name = g_strdup ("HDMI-A-1");
 
     mons[1].x = 3840;
     mons[1].y = 0;
     mons[1].width = 1920;
     mons[1].height = 1080;
+    mons[1].rotation = 90;
     mons[1].name = g_strdup ("HDMI-A-2");
 
     gtk_init (&argc, &argv);
