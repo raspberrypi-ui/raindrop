@@ -1,6 +1,10 @@
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
 
+/*----------------------------------------------------------------------------*/
+/* Types and macros */
+/*----------------------------------------------------------------------------*/
+
 typedef struct {
     int width;
     int height;
@@ -20,21 +24,25 @@ typedef struct {
 
 #define MAX_MONS 2
 
-monitor_t mons[MAX_MONS];
-int mousex, mousey;
-int screenw, screenh;
-int curmon;
-int scalen = 1, scaled = 20;
-
-GtkWidget *da;
+#define SNAP_DISTANCE 200
 
 #define SCALE(n) (((n) * scalen) / scaled)
 #define UPSCALE(n) (((n) * scaled) / scalen)
 
-void end_program (GtkWidget *, GdkEvent *, gpointer)
-{
-    gtk_main_quit ();
-}
+/*----------------------------------------------------------------------------*/
+/* Global data */
+/*----------------------------------------------------------------------------*/
+
+monitor_t mons[MAX_MONS];
+int mousex, mousey;
+int screenw, screenh;
+int curmon;
+int scalen = 1, scaled = 16;
+GtkWidget *da;
+
+/*----------------------------------------------------------------------------*/
+/* Helper functions */
+/*----------------------------------------------------------------------------*/
 
 int screen_w (monitor_t mon)
 {
@@ -48,14 +56,18 @@ int screen_h (monitor_t mon)
     else return mon.height;
 }
 
-void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
+/*----------------------------------------------------------------------------*/
+/* Drawing */
+/*----------------------------------------------------------------------------*/
+
+void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
 {
     PangoLayout *layout;
     PangoFontDescription *font;
     int m, w, h, charwid;
 
     GdkRGBA bg = { 0.25, 0.25, 0.25, 1.0 };
-    GdkRGBA fg = { 1.0, 1.0, 1.0, 1.0 };
+    GdkRGBA fg = { 1.0, 1.0, 1.0, 0.75 };
     GdkRGBA bk = { 0.0, 0.0, 0.0, 1.0 };
 
     // window fill
@@ -92,7 +104,9 @@ void draw_function (GtkDrawingArea *, cairo_t *cr, gpointer)
     }
 }
 
-#define SNAP_DISTANCE 200
+/*----------------------------------------------------------------------------*/
+/* Dragging monitor outlines */
+/*----------------------------------------------------------------------------*/
 
 void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
 {
@@ -126,6 +140,10 @@ void drag_end (GtkWidget *, GdkDragContext *, gpointer)
 {
     curmon = -1;
 }
+
+/*----------------------------------------------------------------------------*/
+/* Context menu */
+/*----------------------------------------------------------------------------*/
 
 void check_frequency (void)
 {
@@ -254,29 +272,9 @@ void show_menu (void)
     gtk_menu_popup_at_pointer (GTK_MENU (menu), gtk_get_current_event ());
 }
 
-void click (GtkWidget *, GdkEventButton ev, gpointer)
-{
-    int m;
-
-    curmon = -1;
-    for (m = 0; m < MAX_MONS; m++)
-    {
-        if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x + screen_w (mons[m]))
-            && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y + screen_h (mons[m])))
-        {
-            curmon = m;
-            switch (ev.button)
-            {
-                case 1 :    mousex = ev.x - SCALE(mons[m].x);
-                            mousey = ev.y - SCALE(mons[m].y);
-                            break;
-
-                case 3 :    show_menu ();
-                            break;
-            }
-        }
-    }
-}
+/*----------------------------------------------------------------------------*/
+/* Loading initial config */
+/*----------------------------------------------------------------------------*/
 
 void add_mode (int monitor, int w, int h, float f)
 {
@@ -288,7 +286,7 @@ void add_mode (int monitor, int w, int h, float f)
     mons[monitor].modes = g_list_append (mons[monitor].modes, mod);
 }
 
-int main (int argc, char *argv[])
+void load_current_config (void)
 {
     mons[0].x = 0;
     mons[0].y = 0;
@@ -315,6 +313,48 @@ int main (int argc, char *argv[])
     mons[1].name = g_strdup ("HDMI-A-2");
     mons[1].modes = NULL;
     add_mode (1, 1920, 1080, 50.0);
+}
+
+/*----------------------------------------------------------------------------*/
+/* Event handlers */
+/*----------------------------------------------------------------------------*/
+
+void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
+{
+    int m;
+
+    curmon = -1;
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x + screen_w (mons[m]))
+            && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y + screen_h (mons[m])))
+        {
+            curmon = m;
+            switch (ev.button)
+            {
+                case 1 :    mousex = ev.x - SCALE(mons[m].x);
+                            mousey = ev.y - SCALE(mons[m].y);
+                            break;
+
+                case 3 :    show_menu ();
+                            break;
+            }
+        }
+    }
+}
+
+void end_program (GtkWidget *, GdkEvent *, gpointer)
+{
+    gtk_main_quit ();
+}
+
+/*----------------------------------------------------------------------------*/
+/* Main function */
+/*----------------------------------------------------------------------------*/
+
+int main (int argc, char *argv[])
+{
+    load_current_config ();
 
     gtk_init (&argc, &argv);
     GtkWidget *win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -323,8 +363,8 @@ int main (int argc, char *argv[])
     da = gtk_drawing_area_new ();
     gtk_drag_source_set (da, GDK_BUTTON1_MASK, NULL, 0, 0);
     gtk_drag_dest_set (da, 0, NULL, 0, 0);
-    g_signal_connect (da, "draw", G_CALLBACK (draw_function), NULL);
-    g_signal_connect (da, "button-press-event", G_CALLBACK (click), NULL);
+    g_signal_connect (da, "draw", G_CALLBACK (draw), NULL);
+    g_signal_connect (da, "button-press-event", G_CALLBACK (button_press_event), NULL);
     g_signal_connect (da, "drag-motion", G_CALLBACK (drag_motion), NULL);
     g_signal_connect (da, "drag-end", G_CALLBACK (drag_end), NULL);
     gtk_widget_set_size_request (da, 500, 400);
@@ -337,3 +377,6 @@ int main (int argc, char *argv[])
     gtk_main ();
     return 0;
 }
+
+/* End of file */
+/*============================================================================*/

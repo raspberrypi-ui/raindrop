@@ -1,3 +1,3 @@
-project ('arc','c')
+project ('raindrop','c')
 
 subdir('src')

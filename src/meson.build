@@ -5,4 +5,4 @@ sources = files (
 gtk = dependency ('gtk+-3.0')
 deps = [ gtk ]
 
-executable ('arc', sources, dependencies: deps, install: true)
+executable ('raindrop', sources, dependencies: deps, install: true)
