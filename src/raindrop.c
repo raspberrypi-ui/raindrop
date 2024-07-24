@@ -385,19 +385,13 @@ void load_current_config (void)
 /* Writing config */
 /*----------------------------------------------------------------------------*/
 
-gboolean copy_profile (FILE *fp, FILE *foutp)
+gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
 {
     char *line;
     size_t len;
     gboolean valid = FALSE;
     char *buf, *tmp;
-    int m, nmons = 0;
-
-    for (m = 0; m < MAX_MONS; m++)
-    {
-        if (mons[m].width == 0) continue;
-        nmons++;
-    }
+    int m;
 
     line = NULL;
     len = 0;
@@ -438,16 +432,16 @@ gboolean copy_profile (FILE *fp, FILE *foutp)
     return FALSE;
 }
 
-void write_config (FILE *fp)
+int write_config (FILE *fp)
 {
     const char *orients[4] = { "normal", "90", "180", "270" };
-    int m;
+    int m, nmons = 0;
 
     fprintf (fp, "profile {\n");
-
     for (m = 0; m < MAX_MONS; m++)
     {
         if (mons[m].width == 0) continue;
+        nmons++;
         fprintf (fp, "\t\toutput %s mode %dx%d@%.3f position %d,%d transform %s\n", 
             mons[m].name,
             mons[m].width,
@@ -458,23 +452,21 @@ void write_config (FILE *fp)
             orients[mons[m].rotation / 90]
         );
     }
-    fprintf (fp, "}\n");
+    fprintf (fp, "}\n\n");
+
+    return nmons;
 }
 
 void merge_configs (void)
 {
-    // parse the kanshi config file
-    // need to identify if it already contains a matching profile, in which
-    // case we overwrite, or if it doesn't, in which case we append...
-
     FILE *finp = fopen ("/home/spl/.config/kanshi/config", "r");
     FILE *foutp = fopen ("/home/spl/.config/kanshi/newconf", "w");
 
-    // copy any other profiles
-    while (copy_profile (finp, foutp));
-
     // write the profile for this config
-    write_config (foutp);
+    int nmons = write_config (foutp);
+
+    // copy any other profiles
+    while (copy_profile (finp, foutp, nmons));
 
     fclose (finp);
     fclose (foutp);
