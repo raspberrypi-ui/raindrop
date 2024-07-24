@@ -333,9 +333,9 @@ void load_current_config (void)
                 else if (strstr (line, "Transform"))
                 {
                     if (strstr (line, "normal")) mons[mon].rotation = 0;
-                    else if (strstr (line, "left")) mons[mon].rotation = 90;
-                    else if (strstr (line, "inverted")) mons[mon].rotation = 180;
-                    else if (strstr (line, "right")) mons[mon].rotation = 270;
+                    else if (strstr (line, "90")) mons[mon].rotation = 90;
+                    else if (strstr (line, "180")) mons[mon].rotation = 180;
+                    else if (strstr (line, "270")) mons[mon].rotation = 270;
                 }
             }
             else if (line[4] != ' ')
@@ -408,7 +408,7 @@ void write_config (void)
     FILE *fp = fopen ("/home/spl/.config/kanshi/config", "wb");
     fprintf (fp, "profile {\n");
 
-    const char *orients[4] = { "normal", "left", "inverted", "right" };
+    const char *orients[4] = { "normal", "90", "180", "270" };
 
     for (m = 0; m < MAX_MONS; m++)
     {
