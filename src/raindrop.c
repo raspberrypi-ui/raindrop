@@ -22,7 +22,7 @@ typedef struct {
     GList *modes;
 } monitor_t;
 
-#define MAX_MONS 2
+#define MAX_MONS 10
 
 #define SNAP_DISTANCE 200
 
@@ -77,6 +77,8 @@ void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
 
     for (m = 0; m < MAX_MONS; m++)
     {
+        if (mons[m].width == 0) continue;
+
         // background
         gdk_cairo_set_source_rgba (cr, &fg);
         cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(screen_w (mons[m])), SCALE(screen_h (mons[m])));
@@ -126,6 +128,8 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
         // snap top and left to other windows bottom or right, or to 0,0
         for (m = 0; m < MAX_MONS; m++)
         {
+            if (mons[m].width == 0) continue;
+
             xs = m != curmon ? mons[m].x + screen_w (mons[m]) : 0;
             ys = m != curmon ? mons[m].y + screen_h (mons[m]) : 0;
             if (mons[curmon].x > xs - SNAP_DISTANCE && mons[curmon].x < xs + SNAP_DISTANCE) mons[curmon].x = xs;
@@ -289,31 +293,92 @@ void add_mode (int monitor, int w, int h, float f)
 
 void load_current_config (void)
 {
-    mons[0].x = 0;
-    mons[0].y = 0;
-    mons[0].width = 3840;
-    mons[0].height = 2160;
-    mons[0].freq = 59.94;
-    mons[0].rotation = 0;
-    mons[0].name = g_strdup ("HDMI-A-1");
-    mons[0].modes = NULL;
-    add_mode (0, 3840, 2160, 60.0);
-    add_mode (0, 3840, 2160, 59.94);
-    add_mode (0, 3840, 2160, 50.0);
-    add_mode (0, 1920, 1080, 60.0);
-    add_mode (0, 1920, 1080, 50.0);
-    add_mode (0, 1600, 1200, 50.0);
-    add_mode (0, 800, 600, 50.0);
+    FILE *fp;
+    char *line, *cptr;
+    size_t len;
+    int mon, w, h;
+    float f;
 
-    mons[1].x = 3840;
-    mons[1].y = 0;
-    mons[1].width = 1920;
-    mons[1].height = 1080;
-    mons[1].freq = 50.0;
-    mons[1].rotation = 90;
-    mons[1].name = g_strdup ("HDMI-A-2");
-    mons[1].modes = NULL;
-    add_mode (1, 1920, 1080, 50.0);
+    for (mon = 0; mon < MAX_MONS; mon++)
+    {
+        mons[mon].width = 0;
+        mons[mon].modes = NULL;
+    }
+
+    mon = -1;
+
+    fp = popen ("wlr-randr", "r");
+    if (fp)
+    {
+        line = NULL;
+        len = 0;
+        while (getline (&line, &len, fp) != -1)
+        {
+            if (line[0] != ' ')
+            {
+                mon++;
+                cptr = line;
+                while (*cptr != ' ') cptr++;
+                *cptr = 0;
+                mons[mon].name = g_strdup (line);
+            }
+            else if (line[2] != ' ')
+            {
+                if (strstr (line, "Position"))
+                {
+                    sscanf (line, "  Position: %d,%d", &w, &h);
+                    mons[mon].x = w;
+                    mons[mon].y = h;
+                }
+                else if (strstr (line, "Transform"))
+                {
+                    if (strstr (line, "normal")) mons[mon].rotation = 0;
+                    else if (strstr (line, "left")) mons[mon].rotation = 90;
+                    else if (strstr (line, "inverted")) mons[mon].rotation = 180;
+                    else if (strstr (line, "right")) mons[mon].rotation = 270;
+                }
+            }
+            else if (line[4] != ' ')
+            {
+                sscanf (line, "    %dx%d px, %f Hz", &w, &h, &f);
+                add_mode (mon, w, h, f);
+                if (strstr (line, "current"))
+                {
+                    mons[mon].width = w;
+                    mons[mon].height = h;
+                    mons[mon].freq = f;
+                }
+            }
+        }
+        free (line);
+        pclose (fp);
+    }
+
+    //mons[0].x = 0;
+    //mons[0].y = 0;
+    //mons[0].width = 3840;
+    //mons[0].height = 2160;
+    //mons[0].freq = 59.94;
+    //mons[0].rotation = 0;
+    //mons[0].name = g_strdup ("HDMI-A-1");
+    //mons[0].modes = NULL;
+    //add_mode (0, 3840, 2160, 60.0);
+    //add_mode (0, 3840, 2160, 59.94);
+    //add_mode (0, 3840, 2160, 50.0);
+    //add_mode (0, 1920, 1080, 60.0);
+    //add_mode (0, 1920, 1080, 50.0);
+    //add_mode (0, 1600, 1200, 50.0);
+    //add_mode (0, 800, 600, 50.0);
+
+    //mons[1].x = 3840;
+    //mons[1].y = 0;
+    //mons[1].width = 1920;
+    //mons[1].height = 1080;
+    //mons[1].freq = 50.0;
+    //mons[1].rotation = 90;
+    //mons[1].name = g_strdup ("HDMI-A-2");
+    //mons[1].modes = NULL;
+    //add_mode (1, 1920, 1080, 50.0);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -327,6 +392,8 @@ void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
     curmon = -1;
     for (m = 0; m < MAX_MONS; m++)
     {
+        if (mons[m].width == 0) continue;
+
         if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x + screen_w (mons[m]))
             && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y + screen_h (mons[m])))
         {
