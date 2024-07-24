@@ -354,13 +354,17 @@ void end_program (GtkWidget *, GdkEvent *, gpointer)
 
 int main (int argc, char *argv[])
 {
-    load_current_config ();
+    GtkBuilder *builder;
 
     gtk_init (&argc, &argv);
-    GtkWidget *win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+
+    // build the UI
+    builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
+
+    GtkWidget *win = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
     g_signal_connect (win, "delete-event", G_CALLBACK (end_program), NULL);
 
-    da = gtk_drawing_area_new ();
+    da = (GtkWidget *) gtk_builder_get_object (builder, "da");
     gtk_drag_source_set (da, GDK_BUTTON1_MASK, NULL, 0, 0);
     gtk_drag_dest_set (da, 0, NULL, 0, 0);
     g_signal_connect (da, "draw", G_CALLBACK (draw), NULL);
@@ -368,11 +372,12 @@ int main (int argc, char *argv[])
     g_signal_connect (da, "drag-motion", G_CALLBACK (drag_motion), NULL);
     g_signal_connect (da, "drag-end", G_CALLBACK (drag_end), NULL);
     gtk_widget_set_size_request (da, 500, 400);
-    gtk_container_add (GTK_CONTAINER (win), da);
 
     gtk_widget_show_all (win);
     screenw = gtk_widget_get_allocated_width (GTK_WIDGET (da));
     screenh = gtk_widget_get_allocated_height (GTK_WIDGET (da));
+
+    load_current_config ();
 
     gtk_main ();
     return 0;

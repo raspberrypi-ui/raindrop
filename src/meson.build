@@ -1,5 +1,5 @@
 sources = files (
-    'arc.c'
+    'raindrop.c'
 )
 
 gtk = dependency ('gtk+-3.0')
