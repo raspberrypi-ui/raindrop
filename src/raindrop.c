@@ -385,30 +385,63 @@ void load_current_config (void)
 /* Writing config */
 /*----------------------------------------------------------------------------*/
 
-gboolean read_profile (FILE *fp)
+gboolean copy_profile (FILE *fp, FILE *foutp, char *id)
 {
     char *line;
     size_t len;
+    gboolean valid = FALSE;
+    char *buf, *tmp, *pid, *tok;
 
     line = NULL;
     len = 0;
     while (getline (&line, &len, fp) != -1)
     {
+        if (strstr (line, "profile"))
+        {
+            valid = TRUE;
+            buf = g_strdup (line);
+            pid = NULL;
+        }
+        else if (valid)
+        {
+            if (strstr (line, "}"))
+            {
+                tmp = g_strdup_printf ("%s}\n", buf);
+                g_free (buf);
+                buf = tmp;
+                if (strcmp (pid, id)) fprintf (foutp, "%s\n", buf);
+                g_free (buf);
+                g_free (pid);
+                return TRUE;
+            }
+            else if (strstr (line, "output"))
+            {
+                tmp = g_strdup_printf ("%s%s", buf, line);
+                g_free (buf);
+                buf = tmp;
+
+                tok = strtok (line, " \t");
+                tok = strtok (NULL, " \t");
+                if (pid == NULL) pid = g_strdup (tok);
+                else
+                {
+                    tmp = g_strdup_printf ("%s:%s", pid, tok);
+                    g_free (pid);
+                    pid = tmp;
+                }
+            }
+        }
     }
     free (line);
     return FALSE;
 }
 
-void write_config (void)
+void write_config (FILE *fp)
 {
-    // parse the kanshi config file
-    // need to identify if it already contains a matching profile, in which
-    // case we overwrite, or if it doesn't, in which case we append...
-    int m;
-    FILE *fp = fopen ("/home/spl/.config/kanshi/config", "wb");
-    fprintf (fp, "profile {\n");
-
     const char *orients[4] = { "normal", "90", "180", "270" };
+    int m;
+
+    fprintf (fp, "profile {\n");
 
     for (m = 0; m < MAX_MONS; m++)
     {
@@ -424,8 +457,41 @@ void write_config (void)
         );
     }
     fprintf (fp, "}\n");
-    fclose (fp);
-    system ("pkill --signal SIGHUP kanshi");
+}
+
+void merge_configs (void)
+{
+    int m;
+    char *pid = NULL, *tmp;
+
+    // parse the kanshi config file
+    // need to identify if it already contains a matching profile, in which
+    // case we overwrite, or if it doesn't, in which case we append...
+
+    FILE *finp = fopen ("/home/spl/.config/kanshi/config", "r");
+    FILE *foutp = fopen ("/home/spl/.config/kanshi/newconf", "w");
+
+    // get the profile identifier string for the current config
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].width == 0) continue;
+        if (pid == NULL) pid = g_strdup (mons[m].name);
+        else
+        {
+            tmp = g_strdup_printf ("%s:%s", pid, mons[m].name);
+            g_free (pid);
+            pid = tmp;
+        }
+    }
+
+    // copy any other profiles
+    while (copy_profile (finp, foutp, pid));
+
+    // write the profile for this config
+    write_config (foutp);
+
+    fclose (finp);
+    fclose (foutp);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -465,7 +531,9 @@ void handle_close (GtkButton *, gpointer)
 
 void handle_apply (GtkButton *, gpointer)
 {
-    write_config ();
+    merge_configs ();
+    // here, copy the new config file over the old one and delete...
+    system ("pkill --signal SIGHUP kanshi");
 }
 
 void handle_undo (GtkButton *, gpointer)
