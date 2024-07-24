@@ -205,15 +205,16 @@ void add_frequency (GtkWidget *menu, float freq)
 
 void set_orientation (GtkMenuItem *item, gpointer)
 {
-    sscanf (gtk_menu_item_get_label (item), "%d", &(mons[curmon].rotation));
+    sscanf (gtk_widget_get_name (GTK_WIDGET (item)), "%d", &(mons[curmon].rotation));
     gtk_widget_queue_draw (da);
 }
 
-void add_orientation (GtkWidget *menu, int rotation)
+void add_orientation (GtkWidget *menu, const char *orient, int rotation)
 {
-    char *label = g_strdup_printf ("%d", rotation);
-    GtkWidget *item = gtk_check_menu_item_new_with_label (label);
-    g_free (label);
+    GtkWidget *item = gtk_check_menu_item_new_with_label (orient);
+    char *tag = g_strdup_printf ("%d", rotation);
+    gtk_widget_set_name (item, tag);
+    g_free (tag);
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[curmon].rotation == rotation);
     g_signal_connect (item, "activate", G_CALLBACK (set_orientation), NULL);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
@@ -260,10 +261,10 @@ void show_menu (void)
 
     // orientation menu - generic
     omenu = gtk_menu_new ();
-    add_orientation (omenu, 0);
-    add_orientation (omenu, 90);
-    add_orientation (omenu, 180);
-    add_orientation (omenu, 270);
+    add_orientation (omenu, _("Normal"), 0);
+    add_orientation (omenu, _("Left"), 90);
+    add_orientation (omenu, _("Inverted"), 180);
+    add_orientation (omenu, _("Right"), 270);
     item = gtk_menu_item_new_with_label (_("Orientation"));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), omenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
