@@ -382,6 +382,53 @@ void load_current_config (void)
 }
 
 /*----------------------------------------------------------------------------*/
+/* Writing config */
+/*----------------------------------------------------------------------------*/
+
+gboolean read_profile (FILE *fp)
+{
+    char *line;
+    size_t len;
+
+    line = NULL;
+    len = 0;
+    while (getline (&line, &len, fp) != -1)
+    {
+    }
+    free (line);
+    return FALSE;
+}
+
+void write_config (void)
+{
+    // parse the kanshi config file
+    // need to identify if it already contains a matching profile, in which
+    // case we overwrite, or if it doesn't, in which case we append...
+    int m;
+    FILE *fp = fopen ("/home/spl/.config/kanshi/config", "wb");
+    fprintf (fp, "profile {\n");
+
+    const char *orients[4] = { "normal", "left", "inverted", "right" };
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].width == 0) continue;
+        fprintf (fp, "\t\toutput %s mode %dx%d@%.3f position %d,%d transform %s\n", 
+            mons[m].name,
+            mons[m].width,
+            mons[m].height,
+            mons[m].freq,
+            mons[m].x,
+            mons[m].y,
+            orients[mons[m].rotation / 90]
+        );
+    }
+    fprintf (fp, "}\n");
+    fclose (fp);
+    system ("pkill --signal SIGHUP kanshi");
+}
+
+/*----------------------------------------------------------------------------*/
 /* Event handlers */
 /*----------------------------------------------------------------------------*/
 
@@ -418,6 +465,7 @@ void handle_close (GtkButton *, gpointer)
 
 void handle_apply (GtkButton *, gpointer)
 {
+    write_config ();
 }
 
 void handle_undo (GtkButton *, gpointer)
