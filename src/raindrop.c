@@ -385,12 +385,19 @@ void load_current_config (void)
 /* Writing config */
 /*----------------------------------------------------------------------------*/
 
-gboolean copy_profile (FILE *fp, FILE *foutp, char *id)
+gboolean copy_profile (FILE *fp, FILE *foutp)
 {
     char *line;
     size_t len;
     gboolean valid = FALSE;
-    char *buf, *tmp, *pid, *tok;
+    char *buf, *tmp;
+    int m, nmons = 0;
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].width == 0) continue;
+        nmons++;
+    }
 
     line = NULL;
     len = 0;
@@ -400,7 +407,6 @@ gboolean copy_profile (FILE *fp, FILE *foutp, char *id)
         {
             valid = TRUE;
             buf = g_strdup (line);
-            pid = NULL;
         }
         else if (valid)
         {
@@ -409,9 +415,9 @@ gboolean copy_profile (FILE *fp, FILE *foutp, char *id)
                 tmp = g_strdup_printf ("%s}\n", buf);
                 g_free (buf);
                 buf = tmp;
-                if (strcmp (pid, id)) fprintf (foutp, "%s\n", buf);
+
+                if (nmons) fprintf (foutp, "%s\n", buf);
                 g_free (buf);
-                g_free (pid);
                 return TRUE;
             }
             else if (strstr (line, "output"))
@@ -420,14 +426,10 @@ gboolean copy_profile (FILE *fp, FILE *foutp, char *id)
                 g_free (buf);
                 buf = tmp;
 
-                tok = strtok (line, " \t");
-                tok = strtok (NULL, " \t");
-                if (pid == NULL) pid = g_strdup (tok);
-                else
+                for (m = 0; m < MAX_MONS; m++)
                 {
-                    tmp = g_strdup_printf ("%s:%s", pid, tok);
-                    g_free (pid);
-                    pid = tmp;
+                    if (mons[m].width == 0) continue;
+                    if (strstr (line, mons[m].name)) nmons--;
                 }
             }
         }
@@ -461,9 +463,6 @@ void write_config (FILE *fp)
 
 void merge_configs (void)
 {
-    int m;
-    char *pid = NULL, *tmp;
-
     // parse the kanshi config file
     // need to identify if it already contains a matching profile, in which
     // case we overwrite, or if it doesn't, in which case we append...
@@ -471,21 +470,8 @@ void merge_configs (void)
     FILE *finp = fopen ("/home/spl/.config/kanshi/config", "r");
     FILE *foutp = fopen ("/home/spl/.config/kanshi/newconf", "w");
 
-    // get the profile identifier string for the current config
-    for (m = 0; m < MAX_MONS; m++)
-    {
-        if (mons[m].width == 0) continue;
-        if (pid == NULL) pid = g_strdup (mons[m].name);
-        else
-        {
-            tmp = g_strdup_printf ("%s:%s", pid, mons[m].name);
-            g_free (pid);
-            pid = tmp;
-        }
-    }
-
     // copy any other profiles
-    while (copy_profile (finp, foutp, pid));
+    while (copy_profile (finp, foutp));
 
     // write the profile for this config
     write_config (foutp);
