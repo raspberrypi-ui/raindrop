@@ -343,6 +343,19 @@ void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
     }
 }
 
+void handle_close (GtkButton *, gpointer)
+{
+    gtk_main_quit ();
+}
+
+void handle_apply (GtkButton *, gpointer)
+{
+}
+
+void handle_undo (GtkButton *, gpointer)
+{
+}
+
 void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
     gtk_main_quit ();
@@ -372,6 +385,10 @@ int main (int argc, char *argv[])
     g_signal_connect (da, "drag-motion", G_CALLBACK (drag_motion), NULL);
     g_signal_connect (da, "drag-end", G_CALLBACK (drag_end), NULL);
     gtk_widget_set_size_request (da, 500, 400);
+
+    g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
+    g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
+    g_signal_connect (gtk_builder_get_object (builder, "btn_undo"), "clicked", G_CALLBACK (handle_undo), NULL);
 
     gtk_widget_show_all (win);
     screenw = gtk_widget_get_allocated_width (GTK_WIDGET (da));

@@ -4,6 +4,7 @@
   <requires lib="gtk+" version="3.24"/>
   <object class="GtkWindow" id="main_win">
     <property name="can-focus">False</property>
+    <property name="title" translatable="yes">Screen Configuration</property>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>
@@ -181,6 +182,11 @@
           <object class="GtkButtonBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
+            <property name="margin-start">5</property>
+            <property name="margin-end">5</property>
+            <property name="margin-top">5</property>
+            <property name="margin-bottom">5</property>
+            <property name="spacing">5</property>
             <property name="layout-style">end</property>
             <child>
               <object class="GtkButton" id="btn_close">
