@@ -459,8 +459,11 @@ int write_config (FILE *fp)
 
 void merge_configs (void)
 {
-    FILE *finp = fopen ("/home/spl/.config/kanshi/config", "r");
-    FILE *foutp = fopen ("/home/spl/.config/kanshi/newconf", "w");
+    char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
+    char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/newconf", NULL);
+
+    FILE *finp = fopen (infile, "r");
+    FILE *foutp = fopen (outfile, "w");
 
     // write the profile for this config
     int nmons = write_config (foutp);
@@ -470,6 +473,9 @@ void merge_configs (void)
 
     fclose (finp);
     fclose (foutp);
+
+    g_free (infile);
+    g_free (outfile);
 }
 
 /*----------------------------------------------------------------------------*/
