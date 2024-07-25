@@ -67,7 +67,7 @@ monitor_t mons[MAX_MONS];
 int mousex, mousey;
 int screenw, screenh;
 int curmon;
-int scale = 16;
+int scale = 8;
 GtkWidget *da, *win, *undo, *zin, *zout;
 
 /*----------------------------------------------------------------------------*/
@@ -632,10 +632,10 @@ void handle_undo (GtkButton *, gpointer)
 
 void handle_zoom (GtkButton *, gpointer data)
 {
-    if ((long) data == -1 && scale < 32) scale *= 2;
-    if ((long) data == 1 && scale > 8) scale /= 2;
-    gtk_widget_set_sensitive (zin, scale != 8);
-    gtk_widget_set_sensitive (zout, scale != 32);
+    if ((long) data == -1 && scale < 16) scale *= 2;
+    if ((long) data == 1 && scale > 4) scale /= 2;
+    gtk_widget_set_sensitive (zin, scale != 4);
+    gtk_widget_set_sensitive (zout, scale != 16);
     gtk_widget_queue_draw (da);
 }
 
