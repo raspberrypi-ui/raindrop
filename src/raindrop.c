@@ -690,8 +690,6 @@ int main (int argc, char *argv[])
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
 
-
-
     gtk_widget_show_all (win);
 
     gtk_main ();
