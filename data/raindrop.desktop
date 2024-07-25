@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Screen Configuration (New)
+GenericName=Screen Configuration
+Icon=computer
+Exec=raindrop
+Terminal=false
+Type=Application
+Categories=Settings;
+StartupNotify=true
