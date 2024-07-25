@@ -1,5 +1,5 @@
 /*============================================================================
-Copyright (c) 20248 Raspberry Pi (Trading) Ltd.
+Copyright (c) 20248 Raspberry Pi Holdings Ltd.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
