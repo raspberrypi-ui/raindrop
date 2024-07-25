@@ -78,11 +78,18 @@
             </child>
             <child>
               <object class="GtkButton" id="btn_zin">
-                <property name="label" translatable="yes">+</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
                 <property name="margin-start">10</property>
+                <property name="always-show-image">True</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="icon-name">zoom-in</property>
+                  </object>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -93,11 +100,18 @@
             </child>
             <child>
               <object class="GtkButton" id="btn_zout">
-                <property name="label" translatable="yes">-</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
                 <property name="margin-end">10</property>
+                <property name="always-show-image">True</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="icon-name">zoom-out</property>
+                  </object>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -154,5 +168,16 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkSizeGroup">
+    <property name="mode">vertical</property>
+    <widgets>
+      <widget name="btn_menu"/>
+      <widget name="btn_zin"/>
+      <widget name="btn_zout"/>
+      <widget name="btn_close"/>
+      <widget name="btn_undo"/>
+      <widget name="btn_apply"/>
+    </widgets>
   </object>
 </interface>
