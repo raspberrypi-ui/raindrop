@@ -524,6 +524,13 @@ void handle_undo (GtkButton *, gpointer)
 {
 }
 
+void handle_zoom (GtkButton *, gpointer data)
+{
+    if ((long) data == -1 && scaled < 32) scaled *= 2;
+    if ((long) data == 1 && scaled > 8) scaled /= 2;
+    gtk_widget_queue_draw (da);
+}
+
 void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
     gtk_main_quit ();
@@ -557,6 +564,8 @@ int main (int argc, char *argv[])
     g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_undo"), "clicked", G_CALLBACK (handle_undo), NULL);
+    g_signal_connect (gtk_builder_get_object (builder, "btn_zin"), "clicked", G_CALLBACK (handle_zoom), (gpointer) 1);
+    g_signal_connect (gtk_builder_get_object (builder, "btn_zout"), "clicked", G_CALLBACK (handle_zoom), (gpointer) -1);
 
     gtk_widget_show_all (win);
     screenw = gtk_widget_get_allocated_width (GTK_WIDGET (da));
