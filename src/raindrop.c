@@ -41,7 +41,7 @@ int mousex, mousey;
 int screenw, screenh;
 int curmon;
 int scalen = 1, scaled = 16;
-GtkWidget *da;
+GtkWidget *da, *mb;
 
 /*----------------------------------------------------------------------------*/
 /* Helper functions */
@@ -152,82 +152,92 @@ void drag_end (GtkWidget *, GdkDragContext *, gpointer)
 /* Context menu */
 /*----------------------------------------------------------------------------*/
 
-void check_frequency (void)
+void check_frequency (int mon)
 {
     GList *model;
     output_mode_t *mode;
 
     // set the highest frequency for this mode
-    model = mons[curmon].modes;
+    model = mons[mon].modes;
     while (model)
     {
         mode = (output_mode_t *) model->data;
-        if (mons[curmon].width == mode->width || mons[curmon].height == mode->height)
+        if (mons[mon].width == mode->width && mons[mon].height == mode->height)
         {
-            mons[curmon].freq = mode->freq;
+            mons[mon].freq = mode->freq;
             return;
         }
         model = model->next;
     }
 }
 
-void set_resolution (GtkMenuItem *item, gpointer)
+void set_resolution (GtkMenuItem *item, gpointer data)
 {
     int w, h;
+    int mon = (long) data;
 
     sscanf (gtk_menu_item_get_label (item), "%dx%d", &w, &h);
-    if (w != mons[curmon].width || h != mons[curmon].height)
+    if (w != mons[mon].width || h != mons[mon].height)
     {
-        mons[curmon].width = w;
-        mons[curmon].height = h;
-        check_frequency ();
+        mons[mon].width = w;
+        mons[mon].height = h;
+        check_frequency (mon);
     }
     gtk_widget_queue_draw (da);
 }
 
-void add_resolution (GtkWidget *menu, int width, int height)
+void add_resolution (GtkWidget *menu, long mon, int width, int height)
 {
     char *label = g_strdup_printf ("%dx%d", width, height);
     GtkWidget *item = gtk_check_menu_item_new_with_label (label);
     g_free (label);
-    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[curmon].width == width && mons[curmon].height == height);
-    g_signal_connect (item, "activate", G_CALLBACK (set_resolution), NULL);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].width == width && mons[mon].height == height);
+    g_signal_connect (item, "activate", G_CALLBACK (set_resolution), (gpointer) mon);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
 
-void set_frequency (GtkMenuItem *item, gpointer)
+void set_frequency (GtkMenuItem *item, gpointer data)
 {
-    sscanf (gtk_menu_item_get_label (item), "%fHz", &(mons[curmon].freq));
+    int mon = (long) data;
+    sscanf (gtk_menu_item_get_label (item), "%fHz", &(mons[mon].freq));
 }
 
-void add_frequency (GtkWidget *menu, float freq)
+void add_frequency (GtkWidget *menu, long mon, float freq)
 {
     char *label = g_strdup_printf ("%.3fHz", freq);
     GtkWidget *item = gtk_check_menu_item_new_with_label (label);
     g_free (label);
-    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[curmon].freq == freq);
-    g_signal_connect (item, "activate", G_CALLBACK (set_frequency), NULL);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].freq == freq);
+    g_signal_connect (item, "activate", G_CALLBACK (set_frequency), (gpointer) mon);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
 
-void set_orientation (GtkMenuItem *item, gpointer)
+void set_orientation (GtkMenuItem *item, gpointer data)
 {
-    sscanf (gtk_widget_get_name (GTK_WIDGET (item)), "%d", &(mons[curmon].rotation));
+    int mon = (long) data;
+    sscanf (gtk_widget_get_name (GTK_WIDGET (item)), "%d", &(mons[mon].rotation));
     gtk_widget_queue_draw (da);
 }
 
-void add_orientation (GtkWidget *menu, const char *orient, int rotation)
+void add_orientation (GtkWidget *menu, long mon, const char *orient, int rotation)
 {
     GtkWidget *item = gtk_check_menu_item_new_with_label (orient);
     char *tag = g_strdup_printf ("%d", rotation);
     gtk_widget_set_name (item, tag);
     g_free (tag);
-    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[curmon].rotation == rotation);
-    g_signal_connect (item, "activate", G_CALLBACK (set_orientation), NULL);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].rotation == rotation);
+    g_signal_connect (item, "activate", G_CALLBACK (set_orientation), (gpointer) mon);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
 
-void show_menu (void)
+void set_enable (GtkCheckMenuItem *item, gpointer data)
+{
+    int mon = (long) data;
+    mons[mon].enabled = gtk_check_menu_item_get_active (item);
+    gtk_widget_queue_draw (da);
+}
+
+GtkWidget *create_menu (long mon)
 {
     GList *model;
     GtkWidget *item, *menu, *rmenu, *fmenu, *omenu;
@@ -236,6 +246,17 @@ void show_menu (void)
 
     menu = gtk_menu_new ();
 
+    item = gtk_check_menu_item_new_with_label (_("Active"));
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].enabled);
+    g_signal_connect (item, "activate", G_CALLBACK (set_enable), (gpointer) mon);
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+
+    if (!mons[mon].enabled)
+    {
+        gtk_widget_show_all (menu);
+        return menu;
+    }
+
     // resolution and frequency menus from mode data for this monitor
     // pre-sort list here?
     rmenu = gtk_menu_new ();
@@ -243,18 +264,18 @@ void show_menu (void)
 
     lastw = 0;
     lasth = 0;
-    model = mons[curmon].modes;
+    model = mons[mon].modes;
     while (model)
     {
         mode = (output_mode_t *) model->data;
         if (lastw != mode->width || lasth != mode->height)
         {
-            add_resolution (rmenu, mode->width, mode->height);
+            add_resolution (rmenu, mon, mode->width, mode->height);
             lastw = mode->width;
             lasth = mode->height;
         }
-        if (mode->width == mons[curmon].width && mode->height == mons[curmon].height)
-            add_frequency (fmenu, mode->freq);
+        if (mode->width == mons[mon].width && mode->height == mons[mon].height)
+            add_frequency (fmenu, mon, mode->freq);
         model = model->next;
     }
 
@@ -268,16 +289,39 @@ void show_menu (void)
 
     // orientation menu - generic
     omenu = gtk_menu_new ();
-    add_orientation (omenu, _("Normal"), 0);
-    add_orientation (omenu, _("Left"), 90);
-    add_orientation (omenu, _("Inverted"), 180);
-    add_orientation (omenu, _("Right"), 270);
+    add_orientation (omenu, mon, _("Normal"), 0);
+    add_orientation (omenu, mon, _("Left"), 90);
+    add_orientation (omenu, mon, _("Inverted"), 180);
+    add_orientation (omenu, mon, _("Right"), 270);
     item = gtk_menu_item_new_with_label (_("Orientation"));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), omenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
     gtk_widget_show_all (menu);
-    gtk_menu_popup_at_pointer (GTK_MENU (menu), gtk_get_current_event ());
+    return menu;
+}
+
+/*----------------------------------------------------------------------------*/
+/* Pop-up menu */
+/*----------------------------------------------------------------------------*/
+
+GtkWidget *create_popup (void)
+{
+    GtkWidget *item, *menu, *pmenu;
+    int m;
+
+    menu = gtk_menu_new ();
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].modes == NULL) continue;
+        item = gtk_menu_item_new_with_label (mons[m].name);
+        pmenu = create_menu (m);
+        gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), pmenu);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    }
+    gtk_widget_show_all (menu);
+    return menu;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -497,6 +541,7 @@ void merge_configs (void)
 
 void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
 {
+    GtkWidget *menu;
     int m;
 
     curmon = -1;
@@ -514,9 +559,11 @@ void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
                             mousey = ev.y - SCALE(mons[m].y);
                             break;
 
-                case 3 :    show_menu ();
+                case 3 :    menu = create_menu (m);
+                            gtk_menu_popup_at_pointer (GTK_MENU (menu), gtk_get_current_event ());
                             break;
             }
+            return;
         }
     }
 }
@@ -557,6 +604,8 @@ int main (int argc, char *argv[])
 {
     GtkBuilder *builder;
 
+    load_current_config ();
+
     gtk_init (&argc, &argv);
 
     // build the UI
@@ -580,11 +629,12 @@ int main (int argc, char *argv[])
     g_signal_connect (gtk_builder_get_object (builder, "btn_zin"), "clicked", G_CALLBACK (handle_zoom), (gpointer) 1);
     g_signal_connect (gtk_builder_get_object (builder, "btn_zout"), "clicked", G_CALLBACK (handle_zoom), (gpointer) -1);
 
+    mb = (GtkWidget *) gtk_builder_get_object (builder, "btn_menu");
+    gtk_menu_button_set_popup (GTK_MENU_BUTTON (mb), create_popup ());
+
     gtk_widget_show_all (win);
     screenw = gtk_widget_get_allocated_width (GTK_WIDGET (da));
     screenh = gtk_widget_get_allocated_height (GTK_WIDGET (da));
-
-    load_current_config ();
 
     gtk_main ();
     return 0;
