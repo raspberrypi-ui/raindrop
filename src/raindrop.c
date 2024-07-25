@@ -41,7 +41,7 @@ int mousex, mousey;
 int screenw, screenh;
 int curmon;
 int scalen = 1, scaled = 16;
-GtkWidget *da, *win;
+GtkWidget *da, *win, *undo;
 
 /*----------------------------------------------------------------------------*/
 /* Helper functions */
@@ -560,6 +560,7 @@ void handle_apply (GtkButton *, gpointer)
     system ("pkill --signal SIGHUP kanshi");
     load_current_config ();
     gtk_widget_queue_draw (da);
+    gtk_widget_set_sensitive (undo, TRUE);
 }
 
 void handle_undo (GtkButton *, gpointer)
@@ -576,6 +577,7 @@ void handle_undo (GtkButton *, gpointer)
     system ("pkill --signal SIGHUP kanshi");
     load_current_config ();
     gtk_widget_queue_draw (da);
+    gtk_widget_set_sensitive (undo, FALSE);
 }
 
 void handle_zoom (GtkButton *, gpointer data)
@@ -623,12 +625,14 @@ int main (int argc, char *argv[])
     g_signal_connect (da, "drag-end", G_CALLBACK (drag_end), NULL);
     gtk_window_set_default_size (GTK_WINDOW (win), 500, 400);
 
+    undo = (GtkWidget *) gtk_builder_get_object (builder, "btn_undo");
+    g_signal_connect (undo, "clicked", G_CALLBACK (handle_undo), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
-    g_signal_connect (gtk_builder_get_object (builder, "btn_undo"), "clicked", G_CALLBACK (handle_undo), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_zin"), "clicked", G_CALLBACK (handle_zoom), (gpointer) 1);
     g_signal_connect (gtk_builder_get_object (builder, "btn_zout"), "clicked", G_CALLBACK (handle_zoom), (gpointer) -1);
     g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
+    gtk_widget_set_sensitive (undo, FALSE);
 
     gtk_widget_show_all (win);
 
