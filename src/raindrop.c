@@ -41,7 +41,7 @@ int mousex, mousey;
 int screenw, screenh;
 int curmon;
 int scalen = 1, scaled = 16;
-GtkWidget *da;
+GtkWidget *da, *win;
 
 /*----------------------------------------------------------------------------*/
 /* Helper functions */
@@ -72,6 +72,9 @@ void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
     GdkRGBA bg = { 0.25, 0.25, 0.25, 1.0 };
     GdkRGBA fg = { 1.0, 1.0, 1.0, 0.75 };
     GdkRGBA bk = { 0.0, 0.0, 0.0, 1.0 };
+
+    screenw = gtk_widget_get_allocated_width (GTK_WIDGET (win));
+    screenh = gtk_widget_get_allocated_height (GTK_WIDGET (win));
 
     // window fill
     gdk_cairo_set_source_rgba (cr, &bg);
@@ -125,8 +128,6 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
         // constrain to screen
         if (mons[curmon].x < 0) mons[curmon].x = 0;
         if (mons[curmon].y < 0) mons[curmon].y = 0;
-        if (SCALE(mons[curmon].x + screen_w (mons[curmon])) > screenw) mons[curmon].x = UPSCALE(screenw - SCALE(screen_w (mons[curmon])));
-        if (SCALE(mons[curmon].y + screen_h (mons[curmon])) > screenh) mons[curmon].y = UPSCALE(screenh - SCALE(screen_h (mons[curmon])));
 
         // snap top and left to other windows bottom or right, or to 0,0
         for (m = 0; m < MAX_MONS; m++)
@@ -622,7 +623,7 @@ int main (int argc, char *argv[])
     // build the UI
     builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
-    GtkWidget *win = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
+    win = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
     g_signal_connect (win, "delete-event", G_CALLBACK (end_program), NULL);
 
     da = (GtkWidget *) gtk_builder_get_object (builder, "da");
@@ -632,7 +633,7 @@ int main (int argc, char *argv[])
     g_signal_connect (da, "button-press-event", G_CALLBACK (button_press_event), NULL);
     g_signal_connect (da, "drag-motion", G_CALLBACK (drag_motion), NULL);
     g_signal_connect (da, "drag-end", G_CALLBACK (drag_end), NULL);
-    gtk_widget_set_size_request (da, 500, 400);
+    gtk_window_set_default_size (GTK_WINDOW (win), 500, 400);
 
     g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
@@ -642,8 +643,6 @@ int main (int argc, char *argv[])
     g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
 
     gtk_widget_show_all (win);
-    screenw = gtk_widget_get_allocated_width (GTK_WIDGET (da));
-    screenh = gtk_widget_get_allocated_height (GTK_WIDGET (da));
 
     gtk_main ();
     return 0;
