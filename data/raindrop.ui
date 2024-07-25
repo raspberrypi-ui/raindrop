@@ -32,20 +32,17 @@
             <property name="spacing">5</property>
             <property name="layout-style">end</property>
             <child>
-              <object class="GtkMenuButton" id="btn_menu">
+              <object class="GtkButton" id="btn_menu">
+                <property name="label" translatable="yes">Monitors</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
-                <property name="focus-on-click">False</property>
                 <property name="receives-default">True</property>
-                <property name="direction">up</property>
-                <child>
-                  <placeholder/>
-                </child>
               </object>
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
+                <property name="non-homogeneous">True</property>
               </packing>
             </child>
             <child>

@@ -41,7 +41,7 @@ int mousex, mousey;
 int screenw, screenh;
 int curmon;
 int scalen = 1, scaled = 16;
-GtkWidget *da, *mb;
+GtkWidget *da;
 
 /*----------------------------------------------------------------------------*/
 /* Helper functions */
@@ -596,6 +596,12 @@ void handle_zoom (GtkButton *, gpointer data)
     gtk_widget_queue_draw (da);
 }
 
+void handle_menu (GtkButton *btn, gpointer)
+{
+    gtk_menu_popup_at_widget (GTK_MENU (create_popup ()), GTK_WIDGET (btn),
+        GDK_GRAVITY_NORTH_WEST, GDK_GRAVITY_SOUTH_WEST, NULL);
+}
+
 void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
     gtk_main_quit ();
@@ -633,9 +639,7 @@ int main (int argc, char *argv[])
     g_signal_connect (gtk_builder_get_object (builder, "btn_undo"), "clicked", G_CALLBACK (handle_undo), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_zin"), "clicked", G_CALLBACK (handle_zoom), (gpointer) 1);
     g_signal_connect (gtk_builder_get_object (builder, "btn_zout"), "clicked", G_CALLBACK (handle_zoom), (gpointer) -1);
-
-    mb = (GtkWidget *) gtk_builder_get_object (builder, "btn_menu");
-    gtk_menu_button_set_popup (GTK_MENU_BUTTON (mb), create_popup ());
+    g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
 
     gtk_widget_show_all (win);
     screenw = gtk_widget_get_allocated_width (GTK_WIDGET (da));
