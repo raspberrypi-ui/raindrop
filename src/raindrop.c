@@ -416,32 +416,6 @@ void load_current_config (void)
         free (line);
         pclose (fp);
     }
-
-    //mons[0].x = 0;
-    //mons[0].y = 0;
-    //mons[0].width = 3840;
-    //mons[0].height = 2160;
-    //mons[0].freq = 59.94;
-    //mons[0].rotation = 0;
-    //mons[0].name = g_strdup ("HDMI-A-1");
-    //mons[0].modes = NULL;
-    //add_mode (0, 3840, 2160, 60.0);
-    //add_mode (0, 3840, 2160, 59.94);
-    //add_mode (0, 3840, 2160, 50.0);
-    //add_mode (0, 1920, 1080, 60.0);
-    //add_mode (0, 1920, 1080, 50.0);
-    //add_mode (0, 1600, 1200, 50.0);
-    //add_mode (0, 800, 600, 50.0);
-
-    //mons[1].x = 3840;
-    //mons[1].y = 0;
-    //mons[1].width = 1920;
-    //mons[1].height = 1080;
-    //mons[1].freq = 50.0;
-    //mons[1].rotation = 90;
-    //mons[1].name = g_strdup ("HDMI-A-2");
-    //mons[1].modes = NULL;
-    //add_mode (1, 1920, 1080, 50.0);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -520,11 +494,8 @@ int write_config (FILE *fp)
     return nmons;
 }
 
-void merge_configs (void)
+void merge_configs (const char *infile, const char *outfile)
 {
-    char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
-    char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/newconf", NULL);
-
     FILE *finp = fopen (infile, "r");
     FILE *foutp = fopen (outfile, "w");
 
@@ -536,9 +507,6 @@ void merge_configs (void)
 
     fclose (finp);
     fclose (foutp);
-
-    g_free (infile);
-    g_free (outfile);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -578,13 +546,36 @@ void handle_close (GtkButton *, gpointer)
 
 void handle_apply (GtkButton *, gpointer)
 {
-    merge_configs ();
-    // here, copy the new config file over the old one and delete...
+    char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
+    char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
+    char *cmd = g_strdup_printf ("cp %s %s", outfile, infile);
+    system (cmd);
+    g_free (cmd);
+
+    merge_configs (infile, outfile);
+
+    g_free (infile);
+    g_free (outfile);
+
     system ("pkill --signal SIGHUP kanshi");
+    load_current_config ();
+    gtk_widget_queue_draw (da);
 }
 
 void handle_undo (GtkButton *, gpointer)
 {
+    char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
+    char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
+    char *cmd = g_strdup_printf ("cp %s %s", infile, outfile);
+    system (cmd);
+    g_free (cmd);
+
+    g_free (infile);
+    g_free (outfile);
+
+    system ("pkill --signal SIGHUP kanshi");
+    load_current_config ();
+    gtk_widget_queue_draw (da);
 }
 
 void handle_zoom (GtkButton *, gpointer data)
