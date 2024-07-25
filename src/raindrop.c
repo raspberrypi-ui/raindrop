@@ -559,18 +559,15 @@ void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
             && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y + screen_h (mons[m])))
         {
             curmon = m;
-            switch (ev.button)
-            {
-                case 1 :    mousex = ev.x - SCALE(mons[m].x);
-                            mousey = ev.y - SCALE(mons[m].y);
-                            break;
-
-                case 3 :    menu = create_menu (m);
-                            gtk_menu_popup_at_pointer (GTK_MENU (menu), gtk_get_current_event ());
-                            break;
-            }
-            return;
+            mousex = ev.x - SCALE(mons[m].x);
+            mousey = ev.y - SCALE(mons[m].y);
         }
+    }
+
+    if (ev.button == 3)
+    {
+        menu = create_menu (curmon);
+        gtk_menu_popup_at_pointer (GTK_MENU (menu), gtk_get_current_event ());
     }
 }
 
