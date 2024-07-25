@@ -242,6 +242,7 @@ GtkWidget *create_menu (long mon)
     GList *model;
     GtkWidget *item, *menu, *rmenu, *fmenu, *omenu;
     int lastw, lasth;
+    float lastf;
     output_mode_t *mode;
 
     menu = gtk_menu_new ();
@@ -264,6 +265,7 @@ GtkWidget *create_menu (long mon)
 
     lastw = 0;
     lasth = 0;
+    lastf = 0.0;
     model = mons[mon].modes;
     while (model)
     {
@@ -274,8 +276,11 @@ GtkWidget *create_menu (long mon)
             lastw = mode->width;
             lasth = mode->height;
         }
-        if (mode->width == mons[mon].width && mode->height == mons[mon].height)
+        if (mode->width == mons[mon].width && mode->height == mons[mon].height && lastf != mode->freq)
+        {
             add_frequency (fmenu, mon, mode->freq);
+            lastf = mode->freq;
+        }
         model = model->next;
     }
 
