@@ -150,7 +150,7 @@ void drag_end (GtkWidget *, GdkDragContext *, gpointer)
 }
 
 /*----------------------------------------------------------------------------*/
-/* Context menu */
+/* Menu handlers */
 /*----------------------------------------------------------------------------*/
 
 void check_frequency (int mon)
@@ -238,6 +238,10 @@ void set_enable (GtkCheckMenuItem *item, gpointer data)
     gtk_widget_queue_draw (da);
 }
 
+/*----------------------------------------------------------------------------*/
+/* Context menu */
+/*----------------------------------------------------------------------------*/
+
 GtkWidget *create_menu (long mon)
 {
     GList *model;
@@ -260,7 +264,6 @@ GtkWidget *create_menu (long mon)
     }
 
     // resolution and frequency menus from mode data for this monitor
-    // pre-sort list here?
     rmenu = gtk_menu_new ();
     fmenu = gtk_menu_new ();
 
@@ -344,6 +347,20 @@ void add_mode (int monitor, int w, int h, float f)
     mons[monitor].modes = g_list_append (mons[monitor].modes, mod);
 }
 
+gint mode_compare (gconstpointer a, gconstpointer b)
+{
+    output_mode_t *moda = (output_mode_t *) a;
+    output_mode_t *modb = (output_mode_t *) b;
+
+    if (moda->width > modb->width) return -1;
+    if (moda->width < modb->width) return 1;
+    if (moda->height > modb->height) return-1;
+    if (moda->height < modb->height) return 1;
+    if (moda->freq > modb->freq) return -1;
+    if (moda->freq < modb->freq) return 1;
+    return 0;
+}
+
 void load_current_config (void)
 {
     FILE *fp;
@@ -415,6 +432,12 @@ void load_current_config (void)
         }
         free (line);
         pclose (fp);
+    }
+
+    for (mon = 0; mon < MAX_MONS; mon++)
+    {
+        if (mons[mon].modes == NULL) continue;
+        mons[mon].modes = g_list_sort (mons[mon].modes, mode_compare);
     }
 }
 
