@@ -54,8 +54,8 @@ typedef struct {
 
 #define SNAP_DISTANCE 200
 
-#define SCALE(n) (((n) * scalen) / scaled)
-#define UPSCALE(n) (((n) * scaled) / scalen)
+#define SCALE(n) ((n) / scale)
+#define UPSCALE(n) ((n) * scale)
 
 /*----------------------------------------------------------------------------*/
 /* Global data */
@@ -67,7 +67,7 @@ monitor_t mons[MAX_MONS];
 int mousex, mousey;
 int screenw, screenh;
 int curmon;
-int scalen = 1, scaled = 16;
+int scale = 16;
 GtkWidget *da, *win, *undo, *zin, *zout;
 
 /*----------------------------------------------------------------------------*/
@@ -632,10 +632,10 @@ void handle_undo (GtkButton *, gpointer)
 
 void handle_zoom (GtkButton *, gpointer data)
 {
-    if ((long) data == -1 && scaled < 32) scaled *= 2;
-    if ((long) data == 1 && scaled > 8) scaled /= 2;
-    gtk_widget_set_sensitive (zin, scaled != 8);
-    gtk_widget_set_sensitive (zout, scaled != 32);
+    if ((long) data == -1 && scale < 32) scale *= 2;
+    if ((long) data == 1 && scale > 8) scale /= 2;
+    gtk_widget_set_sensitive (zin, scale != 8);
+    gtk_widget_set_sensitive (zout, scale != 32);
     gtk_widget_queue_draw (da);
 }
 
