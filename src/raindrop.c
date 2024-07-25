@@ -13,6 +13,7 @@ typedef struct {
 
 typedef struct {
     char *name;
+    gboolean enabled;
     int width;
     int height;
     int x;
@@ -77,7 +78,7 @@ void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
 
     for (m = 0; m < MAX_MONS; m++)
     {
-        if (mons[m].width == 0) continue;
+        if (mons[m].modes == NULL || mons[m].enabled == FALSE) continue;
 
         // background
         gdk_cairo_set_source_rgba (cr, &fg);
@@ -128,7 +129,7 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
         // snap top and left to other windows bottom or right, or to 0,0
         for (m = 0; m < MAX_MONS; m++)
         {
-            if (mons[m].width == 0) continue;
+            if (mons[m].modes == NULL) continue;
 
             xs = m != curmon ? mons[m].x + screen_w (mons[m]) : 0;
             ys = m != curmon ? mons[m].y + screen_h (mons[m]) : 0;
@@ -302,7 +303,13 @@ void load_current_config (void)
     for (mon = 0; mon < MAX_MONS; mon++)
     {
         mons[mon].width = 0;
+        mons[mon].height = 0;
+        mons[mon].x = 0;
+        mons[mon].y = 0;
+        mons[mon].freq = 0.0;
+        mons[mon].rotation = 0;
         mons[mon].modes = NULL;
+        mons[mon].enabled = FALSE;
     }
 
     mon = -1;
@@ -337,12 +344,18 @@ void load_current_config (void)
                     else if (strstr (line, "180")) mons[mon].rotation = 180;
                     else if (strstr (line, "270")) mons[mon].rotation = 270;
                 }
+                else if (strstr (line, "Enabled"))
+                {
+                    if (strstr (line, "no")) mons[mon].enabled = FALSE;
+                    else mons[mon].enabled = TRUE;
+                }
             }
             else if (line[4] != ' ')
             {
                 sscanf (line, "    %dx%d px, %f Hz", &w, &h, &f);
                 add_mode (mon, w, h, f);
-                if (strstr (line, "current"))
+                if ((mons[mon].enabled && strstr (line, "current"))
+                    || (! mons[mon].enabled && strstr (line, "preferred")))
                 {
                     mons[mon].width = w;
                     mons[mon].height = h;
@@ -422,7 +435,7 @@ gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
 
                 for (m = 0; m < MAX_MONS; m++)
                 {
-                    if (mons[m].width == 0) continue;
+                    if (mons[m].modes == NULL) continue;
                     if (strstr (line, mons[m].name)) nmons--;
                 }
             }
@@ -440,17 +453,18 @@ int write_config (FILE *fp)
     fprintf (fp, "profile {\n");
     for (m = 0; m < MAX_MONS; m++)
     {
-        if (mons[m].width == 0) continue;
+        if (mons[m].modes == NULL) continue;
         nmons++;
-        fprintf (fp, "\t\toutput %s mode %dx%d@%.3f position %d,%d transform %s\n", 
-            mons[m].name,
-            mons[m].width,
-            mons[m].height,
-            mons[m].freq,
-            mons[m].x,
-            mons[m].y,
-            orients[mons[m].rotation / 90]
-        );
+        if (mons[m].enabled == FALSE)
+        {
+            fprintf (fp, "\t\toutput %s disable\n", mons[m].name);
+        }
+        else
+        {
+            fprintf (fp, "\t\toutput %s mode %dx%d@%.3f position %d,%d transform %s\n",
+                mons[m].name, mons[m].width, mons[m].height, mons[m].freq,
+                mons[m].x, mons[m].y, orients[mons[m].rotation / 90]);
+        }
     }
     fprintf (fp, "}\n\n");
 
@@ -489,7 +503,7 @@ void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
     curmon = -1;
     for (m = 0; m < MAX_MONS; m++)
     {
-        if (mons[m].width == 0) continue;
+        if (mons[m].modes == NULL || mons[m].enabled == FALSE) continue;
 
         if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x + screen_w (mons[m]))
             && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y + screen_h (mons[m])))
