@@ -34,6 +34,8 @@ typedef struct {
 /* Global data */
 /*----------------------------------------------------------------------------*/
 
+const char *orients[4] = { "normal", "90", "180", "270" };
+
 monitor_t mons[MAX_MONS];
 int mousex, mousey;
 int screenw, screenh;
@@ -297,7 +299,7 @@ void load_current_config (void)
     FILE *fp;
     char *line, *cptr;
     size_t len;
-    int mon, w, h;
+    int mon, w, h, i;
     float f;
 
     for (mon = 0; mon < MAX_MONS; mon++)
@@ -339,10 +341,8 @@ void load_current_config (void)
                 }
                 else if (strstr (line, "Transform"))
                 {
-                    if (strstr (line, "normal")) mons[mon].rotation = 0;
-                    else if (strstr (line, "90")) mons[mon].rotation = 90;
-                    else if (strstr (line, "180")) mons[mon].rotation = 180;
-                    else if (strstr (line, "270")) mons[mon].rotation = 270;
+                    for (i = 0; i < 4; i++)
+                        if (strstr (line, orients[i])) mons[mon].rotation = i * 90;
                 }
                 else if (strstr (line, "Enabled"))
                 {
@@ -447,7 +447,6 @@ gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
 
 int write_config (FILE *fp)
 {
-    const char *orients[4] = { "normal", "90", "180", "270" };
     int m, nmons = 0;
 
     fprintf (fp, "profile {\n");
