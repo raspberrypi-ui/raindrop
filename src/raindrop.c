@@ -72,7 +72,7 @@ int curmon;
 int scale = 8;
 int rev_time;
 int tid;
-GtkWidget *da, *win, *undo, *zin, *zout, *conf;
+GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb;
 
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
@@ -100,7 +100,7 @@ static void load_current_config (void);
 static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
 static int write_config (FILE *fp);
 static void merge_configs (const char *infile, const char *outfile);
-static void set_timer_msg (GtkWidget *lbl);
+static void set_timer_msg (void);
 static void handle_cancel (GtkButton *, gpointer);
 static void handle_ok (GtkButton *, gpointer);
 static gboolean revert_timeout (gpointer data);
@@ -620,11 +620,12 @@ static void merge_configs (const char *infile, const char *outfile)
 /* Confirmation / reversion */
 /*----------------------------------------------------------------------------*/
 
-static void set_timer_msg (GtkWidget *lbl)
+static void set_timer_msg (void)
 {
     char *msg;
     msg = g_strdup_printf (_("Screen updated. Click 'OK' if is this is correct, or 'Cancel' to revert to previous setting.\n\nReverting in %d seconds..."), rev_time);
-    gtk_label_set_text (GTK_LABEL (lbl), msg);
+    gtk_label_set_text (GTK_LABEL (clbl), msg);
+    gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (cpb), (10.0 - (float) rev_time) / 10.0);
     g_free (msg);
 }
 
@@ -639,12 +640,12 @@ static void handle_ok (GtkButton *, gpointer)
     gtk_widget_destroy (conf);
 }
 
-static gboolean revert_timeout (gpointer data)
+static gboolean revert_timeout (gpointer)
 {
     rev_time--;
     if (rev_time > 0)
     {
-        set_timer_msg (GTK_WIDGET (data));
+        set_timer_msg ();
         return TRUE;
     }
     else
@@ -658,19 +659,19 @@ static gboolean revert_timeout (gpointer data)
 static void show_confirm_dialog (void)
 {
     GtkBuilder *builder;
-    GtkWidget *lbl;
 
     builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
     conf = (GtkWidget *) gtk_builder_get_object (builder, "modal");
     gtk_window_set_transient_for (GTK_WINDOW (conf), GTK_WINDOW (win));
-    lbl = (GtkWidget *) gtk_builder_get_object (builder, "modal_msg");
+    clbl = (GtkWidget *) gtk_builder_get_object (builder, "modal_msg");
+    cpb = (GtkWidget *) gtk_builder_get_object (builder, "modal_pb");
     g_signal_connect (gtk_builder_get_object (builder, "modal_ok"), "clicked", G_CALLBACK (handle_ok), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "modal_cancel"), "clicked", G_CALLBACK (handle_cancel), NULL);
     gtk_widget_show_all (conf);
     rev_time = 10;
-    set_timer_msg (lbl);
-    tid = g_timeout_add (1000, (GSourceFunc) revert_timeout, lbl);
+    set_timer_msg ();
+    tid = g_timeout_add (1000, (GSourceFunc) revert_timeout, NULL);
 }
 
 /*----------------------------------------------------------------------------*/
