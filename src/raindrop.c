@@ -57,6 +57,8 @@ typedef struct {
 #define SCALE(n) ((n) / scale)
 #define UPSCALE(n) ((n) * scale)
 
+#define SUDO_PREFIX "env SUDO_ASKPASS=/usr/lib/arandr/pwdarandr.sh sudo -A "
+
 /*----------------------------------------------------------------------------*/
 /* Global data */
 /*----------------------------------------------------------------------------*/
@@ -84,6 +86,14 @@ int screen_h (monitor_t mon)
 {
     if (mon.rotation == 90 || mon.rotation == 270) return mon.width;
     else return mon.height;
+}
+
+void update_greeter_config (void)
+{
+    char *cmd = g_strdup_printf (SUDO_PREFIX "cp %s/kanshi/config /usr/share/labwc/config.kanshi", g_get_user_config_dir ());
+    system (SUDO_PREFIX "mkdir -p /usr/share/labwc/");
+    system (cmd);
+    g_free (cmd);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -591,6 +601,7 @@ void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
 
 void handle_close (GtkButton *, gpointer)
 {
+    update_greeter_config ();
     gtk_main_quit ();
 }
 
@@ -647,6 +658,7 @@ void handle_menu (GtkButton *btn, gpointer)
 
 void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
+    update_greeter_config ();
     gtk_main_quit ();
 }
 
