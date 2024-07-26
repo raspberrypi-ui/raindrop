@@ -57,7 +57,7 @@ typedef struct {
 #define SCALE(n) ((n) / scale)
 #define UPSCALE(n) ((n) * scale)
 
-#define SUDO_PREFIX "env SUDO_ASKPASS=/usr/lib/arandr/pwdarandr.sh sudo -A "
+#define SUDO_PREFIX "env SUDO_ASKPASS=/usr/share/raindrop/pwdraindrop.sh sudo -A "
 
 /*----------------------------------------------------------------------------*/
 /* Global data */
