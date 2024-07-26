@@ -70,25 +70,64 @@ int mousex, mousey;
 int screenw, screenh;
 int curmon;
 int scale = 8;
-GtkWidget *da, *win, *undo, *zin, *zout;
+int rev_time;
+int tid;
+GtkWidget *da, *win, *undo, *zin, *zout, *conf;
+
+/*----------------------------------------------------------------------------*/
+/* Function prototypes */
+/*----------------------------------------------------------------------------*/
+
+static int screen_w (monitor_t mon);
+static int screen_h (monitor_t mon);
+static void update_greeter_config (void);
+static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
+static void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time);
+static void drag_end (GtkWidget *, GdkDragContext *, gpointer);
+static void check_frequency (int mon);
+static void set_resolution (GtkMenuItem *item, gpointer data);
+static void add_resolution (GtkWidget *menu, long mon, int width, int height);
+static void set_frequency (GtkMenuItem *item, gpointer data);
+static void add_frequency (GtkWidget *menu, long mon, float freq);
+static void set_orientation (GtkMenuItem *item, gpointer data);
+static void add_orientation (GtkWidget *menu, long mon, const char *orient, int rotation);
+static void set_enable (GtkCheckMenuItem *item, gpointer data);
+static GtkWidget *create_menu (long mon);
+static GtkWidget *create_popup (void);
+static void add_mode (int monitor, int w, int h, float f);
+static gint mode_compare (gconstpointer a, gconstpointer b);
+static void load_current_config (void);
+static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
+static int write_config (FILE *fp);
+static void merge_configs (const char *infile, const char *outfile);
+static void set_timer_msg (GtkWidget *lbl);
+static gboolean revert_timeout (gpointer data);
+static void show_confirm_dialog (void);
+static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer);
+static void handle_close (GtkButton *, gpointer);
+static void handle_apply (GtkButton *, gpointer);
+static void handle_undo (GtkButton *, gpointer);
+static void handle_zoom (GtkButton *, gpointer data);
+static void handle_menu (GtkButton *btn, gpointer);
+static void end_program (GtkWidget *, GdkEvent *, gpointer);
 
 /*----------------------------------------------------------------------------*/
 /* Helper functions */
 /*----------------------------------------------------------------------------*/
 
-int screen_w (monitor_t mon)
+static int screen_w (monitor_t mon)
 {
     if (mon.rotation == 90 || mon.rotation == 270) return mon.height;
     else return mon.width;
 }
 
-int screen_h (monitor_t mon)
+static int screen_h (monitor_t mon)
 {
     if (mon.rotation == 90 || mon.rotation == 270) return mon.width;
     else return mon.height;
 }
 
-void update_greeter_config (void)
+static void update_greeter_config (void)
 {
     char *cmd;
 
@@ -106,7 +145,7 @@ void update_greeter_config (void)
 /* Drawing */
 /*----------------------------------------------------------------------------*/
 
-void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
+static void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
 {
     PangoLayout *layout;
     PangoFontDescription *font;
@@ -159,7 +198,7 @@ void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
 /* Dragging monitor outlines */
 /*----------------------------------------------------------------------------*/
 
-void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
+static void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
 {
     int m, xs, ys;
 
@@ -187,7 +226,7 @@ void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
     }
 }
 
-void drag_end (GtkWidget *, GdkDragContext *, gpointer)
+static void drag_end (GtkWidget *, GdkDragContext *, gpointer)
 {
     curmon = -1;
 }
@@ -196,7 +235,7 @@ void drag_end (GtkWidget *, GdkDragContext *, gpointer)
 /* Menu handlers */
 /*----------------------------------------------------------------------------*/
 
-void check_frequency (int mon)
+static void check_frequency (int mon)
 {
     GList *model;
     output_mode_t *mode;
@@ -215,7 +254,7 @@ void check_frequency (int mon)
     }
 }
 
-void set_resolution (GtkMenuItem *item, gpointer data)
+static void set_resolution (GtkMenuItem *item, gpointer data)
 {
     int w, h;
     int mon = (long) data;
@@ -230,7 +269,7 @@ void set_resolution (GtkMenuItem *item, gpointer data)
     gtk_widget_queue_draw (da);
 }
 
-void add_resolution (GtkWidget *menu, long mon, int width, int height)
+static void add_resolution (GtkWidget *menu, long mon, int width, int height)
 {
     char *label = g_strdup_printf ("%dx%d", width, height);
     GtkWidget *item = gtk_check_menu_item_new_with_label (label);
@@ -240,13 +279,13 @@ void add_resolution (GtkWidget *menu, long mon, int width, int height)
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
 
-void set_frequency (GtkMenuItem *item, gpointer data)
+static void set_frequency (GtkMenuItem *item, gpointer data)
 {
     int mon = (long) data;
     sscanf (gtk_menu_item_get_label (item), "%fHz", &(mons[mon].freq));
 }
 
-void add_frequency (GtkWidget *menu, long mon, float freq)
+static void add_frequency (GtkWidget *menu, long mon, float freq)
 {
     char *label = g_strdup_printf ("%.3fHz", freq);
     GtkWidget *item = gtk_check_menu_item_new_with_label (label);
@@ -256,14 +295,14 @@ void add_frequency (GtkWidget *menu, long mon, float freq)
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
 
-void set_orientation (GtkMenuItem *item, gpointer data)
+static void set_orientation (GtkMenuItem *item, gpointer data)
 {
     int mon = (long) data;
     sscanf (gtk_widget_get_name (GTK_WIDGET (item)), "%d", &(mons[mon].rotation));
     gtk_widget_queue_draw (da);
 }
 
-void add_orientation (GtkWidget *menu, long mon, const char *orient, int rotation)
+static void add_orientation (GtkWidget *menu, long mon, const char *orient, int rotation)
 {
     GtkWidget *item = gtk_check_menu_item_new_with_label (orient);
     char *tag = g_strdup_printf ("%d", rotation);
@@ -274,7 +313,7 @@ void add_orientation (GtkWidget *menu, long mon, const char *orient, int rotatio
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
 
-void set_enable (GtkCheckMenuItem *item, gpointer data)
+static void set_enable (GtkCheckMenuItem *item, gpointer data)
 {
     int mon = (long) data;
     mons[mon].enabled = gtk_check_menu_item_get_active (item);
@@ -285,7 +324,7 @@ void set_enable (GtkCheckMenuItem *item, gpointer data)
 /* Context menu */
 /*----------------------------------------------------------------------------*/
 
-GtkWidget *create_menu (long mon)
+static GtkWidget *create_menu (long mon)
 {
     GList *model;
     GtkWidget *item, *menu, *rmenu, *fmenu, *omenu;
@@ -357,7 +396,7 @@ GtkWidget *create_menu (long mon)
 /* Pop-up menu */
 /*----------------------------------------------------------------------------*/
 
-GtkWidget *create_popup (void)
+static GtkWidget *create_popup (void)
 {
     GtkWidget *item, *menu, *pmenu;
     int m;
@@ -380,7 +419,7 @@ GtkWidget *create_popup (void)
 /* Loading initial config */
 /*----------------------------------------------------------------------------*/
 
-void add_mode (int monitor, int w, int h, float f)
+static void add_mode (int monitor, int w, int h, float f)
 {
     output_mode_t *mod;
     mod = g_new0 (output_mode_t, 1);
@@ -390,7 +429,7 @@ void add_mode (int monitor, int w, int h, float f)
     mons[monitor].modes = g_list_append (mons[monitor].modes, mod);
 }
 
-gint mode_compare (gconstpointer a, gconstpointer b)
+static gint mode_compare (gconstpointer a, gconstpointer b)
 {
     output_mode_t *moda = (output_mode_t *) a;
     output_mode_t *modb = (output_mode_t *) b;
@@ -404,7 +443,7 @@ gint mode_compare (gconstpointer a, gconstpointer b)
     return 0;
 }
 
-void load_current_config (void)
+static void load_current_config (void)
 {
     FILE *fp;
     char *line, *cptr;
@@ -488,7 +527,7 @@ void load_current_config (void)
 /* Writing config */
 /*----------------------------------------------------------------------------*/
 
-gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
+static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
 {
     char *line;
     size_t len;
@@ -535,7 +574,7 @@ gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
     return FALSE;
 }
 
-int write_config (FILE *fp)
+static int write_config (FILE *fp)
 {
     int m, nmons = 0;
 
@@ -560,7 +599,7 @@ int write_config (FILE *fp)
     return nmons;
 }
 
-void merge_configs (const char *infile, const char *outfile)
+static void merge_configs (const char *infile, const char *outfile)
 {
     FILE *finp = fopen (infile, "r");
     FILE *foutp = fopen (outfile, "w");
@@ -576,10 +615,57 @@ void merge_configs (const char *infile, const char *outfile)
 }
 
 /*----------------------------------------------------------------------------*/
+/* Confirmation / reversion */
+/*----------------------------------------------------------------------------*/
+
+static void set_timer_msg (GtkWidget *lbl)
+{
+    char *msg;
+    msg = g_strdup_printf (_("Screen updated. Click 'OK' if is this is correct, or 'Cancel' to revert to previous setting.\n\nReverting in %d seconds..."), rev_time);
+    gtk_label_set_text (GTK_LABEL (lbl), msg);
+    g_free (msg);
+}
+
+static gboolean revert_timeout (gpointer data)
+{
+    rev_time--;
+    if (rev_time > 0)
+    {
+        set_timer_msg (GTK_WIDGET (data));
+        return TRUE;
+    }
+    else
+    {
+        tid = 0;
+        gtk_dialog_response (GTK_DIALOG (conf), GTK_RESPONSE_CANCEL);
+        return FALSE;
+    }
+}
+
+static void show_confirm_dialog (void)
+{
+    GtkBuilder *builder;
+    GtkWidget *lbl;
+
+    builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
+
+    conf = (GtkWidget *) gtk_builder_get_object (builder, "revert_dlg");
+    lbl = (GtkWidget *) gtk_builder_get_object (builder, "lbl_revert");
+    gtk_widget_show_all (conf);
+    rev_time = 10;
+    set_timer_msg (lbl);
+    tid = g_timeout_add (1000, (GSourceFunc) revert_timeout, lbl);
+    if (gtk_dialog_run (GTK_DIALOG (conf)) == GTK_RESPONSE_CANCEL)
+        handle_undo (NULL, NULL);
+    if (tid) g_source_remove (tid);
+    gtk_widget_destroy (conf);
+}
+
+/*----------------------------------------------------------------------------*/
 /* Event handlers */
 /*----------------------------------------------------------------------------*/
 
-void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
+static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
 {
     GtkWidget *menu;
     int m;
@@ -605,13 +691,13 @@ void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
     }
 }
 
-void handle_close (GtkButton *, gpointer)
+static void handle_close (GtkButton *, gpointer)
 {
     update_greeter_config ();
     gtk_main_quit ();
 }
 
-void handle_apply (GtkButton *, gpointer)
+static void handle_apply (GtkButton *, gpointer)
 {
     char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
     char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
@@ -628,9 +714,10 @@ void handle_apply (GtkButton *, gpointer)
     load_current_config ();
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, TRUE);
+    show_confirm_dialog ();
 }
 
-void handle_undo (GtkButton *, gpointer)
+static void handle_undo (GtkButton *, gpointer)
 {
     char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
     char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
@@ -647,7 +734,7 @@ void handle_undo (GtkButton *, gpointer)
     gtk_widget_set_sensitive (undo, FALSE);
 }
 
-void handle_zoom (GtkButton *, gpointer data)
+static void handle_zoom (GtkButton *, gpointer data)
 {
     if ((long) data == -1 && scale < 16) scale *= 2;
     if ((long) data == 1 && scale > 4) scale /= 2;
@@ -656,13 +743,13 @@ void handle_zoom (GtkButton *, gpointer data)
     gtk_widget_queue_draw (da);
 }
 
-void handle_menu (GtkButton *btn, gpointer)
+static void handle_menu (GtkButton *btn, gpointer)
 {
     gtk_menu_popup_at_widget (GTK_MENU (create_popup ()), GTK_WIDGET (btn),
         GDK_GRAVITY_NORTH_WEST, GDK_GRAVITY_SOUTH_WEST, NULL);
 }
 
-void end_program (GtkWidget *, GdkEvent *, gpointer)
+static void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
     update_greeter_config ();
     gtk_main_quit ();
