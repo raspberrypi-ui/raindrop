@@ -90,10 +90,16 @@ int screen_h (monitor_t mon)
 
 void update_greeter_config (void)
 {
-    char *cmd = g_strdup_printf (SUDO_PREFIX "cp %s/kanshi/config /usr/share/labwc/config.kanshi", g_get_user_config_dir ());
-    system (SUDO_PREFIX "mkdir -p /usr/share/labwc/");
-    system (cmd);
-    g_free (cmd);
+    char *cmd;
+
+    if (gtk_widget_get_sensitive (undo))
+    {
+        cmd = g_strdup_printf (SUDO_PREFIX "cp %s/kanshi/config /usr/share/labwc/config.kanshi",
+            g_get_user_config_dir ());
+        system (SUDO_PREFIX "mkdir -p /usr/share/labwc/");
+        system (cmd);
+        g_free (cmd);
+    }
 }
 
 /*----------------------------------------------------------------------------*/
