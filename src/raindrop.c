@@ -101,6 +101,8 @@ static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
 static int write_config (FILE *fp);
 static void merge_configs (const char *infile, const char *outfile);
 static void set_timer_msg (GtkWidget *lbl);
+static void handle_cancel (GtkButton *, gpointer);
+static void handle_ok (GtkButton *, gpointer);
 static gboolean revert_timeout (gpointer data);
 static void show_confirm_dialog (void);
 static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer);
@@ -626,6 +628,17 @@ static void set_timer_msg (GtkWidget *lbl)
     g_free (msg);
 }
 
+static void handle_cancel (GtkButton *, gpointer)
+{
+    handle_undo (NULL, NULL);
+    gtk_widget_destroy (conf);
+}
+
+static void handle_ok (GtkButton *, gpointer)
+{
+    gtk_widget_destroy (conf);
+}
+
 static gboolean revert_timeout (gpointer data)
 {
     rev_time--;
@@ -637,7 +650,7 @@ static gboolean revert_timeout (gpointer data)
     else
     {
         tid = 0;
-        gtk_dialog_response (GTK_DIALOG (conf), GTK_RESPONSE_CANCEL);
+        handle_cancel (NULL, NULL);
         return FALSE;
     }
 }
@@ -649,16 +662,15 @@ static void show_confirm_dialog (void)
 
     builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
-    conf = (GtkWidget *) gtk_builder_get_object (builder, "revert_dlg");
-    lbl = (GtkWidget *) gtk_builder_get_object (builder, "lbl_revert");
+    conf = (GtkWidget *) gtk_builder_get_object (builder, "modal");
+    gtk_window_set_transient_for (GTK_WINDOW (conf), GTK_WINDOW (win));
+    lbl = (GtkWidget *) gtk_builder_get_object (builder, "modal_msg");
+    g_signal_connect (gtk_builder_get_object (builder, "modal_ok"), "clicked", G_CALLBACK (handle_ok), NULL);
+    g_signal_connect (gtk_builder_get_object (builder, "modal_cancel"), "clicked", G_CALLBACK (handle_cancel), NULL);
     gtk_widget_show_all (conf);
     rev_time = 10;
     set_timer_msg (lbl);
     tid = g_timeout_add (1000, (GSourceFunc) revert_timeout, lbl);
-    if (gtk_dialog_run (GTK_DIALOG (conf)) == GTK_RESPONSE_CANCEL)
-        handle_undo (NULL, NULL);
-    if (tid) g_source_remove (tid);
-    gtk_widget_destroy (conf);
 }
 
 /*----------------------------------------------------------------------------*/
