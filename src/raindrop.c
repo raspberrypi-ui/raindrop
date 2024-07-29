@@ -369,6 +369,7 @@ static GtkWidget *create_menu (long mon)
     int lastw, lasth;
     float lastf;
     output_mode_t *mode;
+    gboolean show_f = FALSE;
 
     menu = gtk_menu_new ();
 
@@ -400,10 +401,11 @@ static GtkWidget *create_menu (long mon)
             lastw = mode->width;
             lasth = mode->height;
         }
-        if (mode->width == mons[mon].width && mode->height == mons[mon].height && lastf != mode->freq)
+        if (mode->width == mons[mon].width && mode->height == mons[mon].height && lastf != mode->freq && mode->freq > 1.0)
         {
             add_frequency (fmenu, mon, mode->freq);
             lastf = mode->freq;
+            show_f = TRUE;
         }
         model = model->next;
     }
@@ -412,9 +414,12 @@ static GtkWidget *create_menu (long mon)
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), rmenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
-    item = gtk_menu_item_new_with_label (_("Frequency"));
-    gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), fmenu);
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    if (show_f)
+    {
+        item = gtk_menu_item_new_with_label (_("Frequency"));
+        gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), fmenu);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    }
 
     // orientation menu - generic
     omenu = gtk_menu_new ();
@@ -517,6 +522,22 @@ static void load_current_config (void)
                 while (*cptr != ' ') cptr++;
                 *cptr = 0;
                 mons[mon].name = g_strdup (line);
+                if (strstr (line, "NOOP"))
+                {
+                    // add virtual modes for VNC display
+                    add_mode (mon, 640, 480, 0);
+                    add_mode (mon, 720, 480, 0);
+                    add_mode (mon, 800, 600, 0);
+                    add_mode (mon, 1024, 768, 0);
+                    add_mode (mon, 1280, 720, 0);
+                    add_mode (mon, 1280, 1024, 0);
+                    add_mode (mon, 1600, 1200, 0);
+                    add_mode (mon, 1920, 1080, 0);
+                    add_mode (mon, 2048, 1080, 0);
+                    add_mode (mon, 2560, 1440, 0);
+                    add_mode (mon, 3200, 1800, 0);
+                    add_mode (mon, 3840, 2160, 0);
+                }
             }
             else if (line[2] != ' ')
             {
@@ -625,6 +646,12 @@ static int write_config (FILE *fp)
         if (mons[m].enabled == FALSE)
         {
             fprintf (fp, "\t\toutput %s disable\n", mons[m].name);
+        }
+        else if (mons[m].freq == 0.0)
+        {
+            fprintf (fp, "\t\toutput %s mode --custom %dx%d position %d,%d transform %s\n",
+                mons[m].name, mons[m].width, mons[m].height,
+                mons[m].x, mons[m].y, orients[mons[m].rotation / 90]);
         }
         else
         {
