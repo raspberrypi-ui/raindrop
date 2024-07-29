@@ -66,7 +66,7 @@ typedef struct {
 
 const char *orients[4] = { "normal", "90", "180", "270" };
 
-monitor_t mons[MAX_MONS];
+monitor_t mons[MAX_MONS], bmons[MAX_MONS];
 int mousex, mousey;
 int screenw, screenh;
 int curmon;
@@ -128,6 +128,39 @@ static int screen_h (monitor_t mon)
 {
     if (mon.rotation == 90 || mon.rotation == 270) return mon.width;
     else return mon.height;
+}
+
+static void copy_config (monitor_t *from, monitor_t *to)
+{
+    int m;
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (from[m].modes == NULL) continue;
+        to[m].enabled = from[m].enabled;
+        to[m].width = from[m].width;
+        to[m].height = from[m].height;
+        to[m].x = from[m].x;
+        to[m].y = from[m].y;
+        to[m].rotation = from[m].rotation;
+        to[m].freq = from[m].freq;
+    }
+}
+
+static gboolean compare_config (monitor_t *from, monitor_t *to)
+{
+    int m;
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (from[m].modes == NULL) continue;
+        if (to[m].enabled != from[m].enabled) return FALSE;
+        if (to[m].width != from[m].width) return FALSE;
+        if (to[m].height != from[m].height) return FALSE;
+        if (to[m].x != from[m].x) return FALSE;
+        if (to[m].y != from[m].y) return FALSE;
+        if (to[m].rotation != from[m].rotation) return FALSE;
+        if (to[m].freq != from[m].freq) return FALSE;
+    }
+    return TRUE;
 }
 
 static void update_greeter_config (void)
@@ -524,6 +557,7 @@ static void load_current_config (void)
         if (mons[mon].modes == NULL) continue;
         mons[mon].modes = g_list_sort (mons[mon].modes, mode_compare);
     }
+    copy_config (mons, bmons);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -713,6 +747,8 @@ static void handle_close (GtkButton *, gpointer)
 
 static void handle_apply (GtkButton *, gpointer)
 {
+    if (compare_config (mons, bmons)) return;
+
     char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
     char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
     char *cmd = g_strdup_printf ("cp %s %s", outfile, infile);
