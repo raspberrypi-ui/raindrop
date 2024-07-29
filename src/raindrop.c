@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <locale.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
+#include <libxml/xpath.h>
 
 /*----------------------------------------------------------------------------*/
 /* Typedefs and macros */
@@ -816,6 +817,67 @@ static void find_touchscreens (void)
     }
 }
 
+static void load_current_touchscreens (void)
+{
+    xmlDocPtr xDoc;
+    xmlNode *root_node, *child_node;
+    xmlAttr *attr;
+    char *infile, *dev, *mon;
+    int m;
+
+    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+    if (!g_file_test (infile, G_FILE_TEST_IS_REGULAR))
+    {
+        g_free (infile);
+        return;
+    }
+
+    xmlInitParser ();
+    LIBXML_TEST_VERSION
+    xDoc = xmlParseFile (infile);
+    if (xDoc == NULL)
+    {
+        g_free (infile);
+        return;
+    }
+
+    root_node = xmlDocGetRootElement (xDoc);
+    for (child_node = root_node->children; child_node; child_node = child_node->next)
+    {
+        if (child_node->type != XML_ELEMENT_NODE) continue;
+        if (!g_strcmp0 ((char *) child_node->name, "touch"))
+        {
+            dev = NULL;
+            mon = NULL;
+            for (attr = child_node->properties; attr; attr = attr->next)
+            {
+                if (!g_strcmp0 ((char *) attr->name, "deviceName"))
+                    dev = g_strdup ((char *) attr->children->content);
+                if (!g_strcmp0 ((char *) attr->name, "mapToOutput"))
+                    mon = g_strdup ((char *) attr->children->content);
+            }
+            if (dev && mon)
+            {
+                for (m = 0; m < MAX_MONS; m++)
+                {
+                    if (mons[m].modes == NULL) continue;
+                    if (!g_strcmp0 (mons[m].name, mon))
+                    {
+                        mons[m].touchscreen = g_strdup (dev);
+                    }
+                }
+            }
+            g_free (dev);
+            g_free (mon);
+        }
+    }
+
+    xmlFreeDoc (xDoc);
+    xmlCleanupParser ();
+
+    g_free (infile);
+}
+
 /*----------------------------------------------------------------------------*/
 /* Event handlers */
 /*----------------------------------------------------------------------------*/
@@ -926,6 +988,7 @@ int main (int argc, char *argv[])
     textdomain (GETTEXT_PACKAGE);
 
     load_current_config ();
+    load_current_touchscreens ();
 
     // ensure the config file reflects the current state, or undo won't work...
     char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);

@@ -3,6 +3,7 @@ sources = files (
 )
 
 gtk = dependency ('gtk+-3.0')
-deps = [ gtk ]
+xml = dependency ('libxml-2.0')
+deps = [ gtk, xml ]
 
 executable ('raindrop', sources, dependencies: deps, install: true)
