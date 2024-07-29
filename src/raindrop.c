@@ -104,6 +104,7 @@ static void add_frequency (GtkWidget *menu, long mon, float freq);
 static void set_orientation (GtkMenuItem *item, gpointer data);
 static void add_orientation (GtkWidget *menu, long mon, const char *orient, int rotation);
 static void set_enable (GtkCheckMenuItem *item, gpointer data);
+static void set_touchscreen (GtkMenuItem *item, gpointer data);
 static GtkWidget *create_menu (long mon);
 static GtkWidget *create_popup (void);
 static void add_mode (int monitor, int w, int h, float f);
@@ -117,6 +118,7 @@ static void handle_cancel (GtkButton *, gpointer);
 static void handle_ok (GtkButton *, gpointer);
 static gboolean revert_timeout (gpointer data);
 static void show_confirm_dialog (void);
+static void find_touchscreens (void);
 static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer);
 static void handle_close (GtkButton *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
@@ -370,7 +372,19 @@ static void set_enable (GtkCheckMenuItem *item, gpointer data)
 static void set_touchscreen (GtkMenuItem *item, gpointer data)
 {
     int mon = (long) data;
-    mons[mon].touchscreen = g_strdup_printf (gtk_menu_item_get_label (item));
+    const char *ts = gtk_menu_item_get_label (item);
+    int m;
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].modes == NULL) continue;
+        if (m == mon) mons[m].touchscreen = g_strdup_printf (ts);
+        else if (!g_strcmp0 (mons[m].touchscreen, ts))
+        {
+            g_free (mons[m].touchscreen);
+            mons[m].touchscreen = NULL;
+        }
+    }
 }
 
 /*----------------------------------------------------------------------------*/
@@ -538,6 +552,7 @@ static void load_current_config (void)
         mons[mon].rotation = 0;
         mons[mon].modes = NULL;
         mons[mon].enabled = FALSE;
+        mons[mon].touchscreen = NULL;
     }
 
     mon = -1;
