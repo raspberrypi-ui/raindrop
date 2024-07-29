@@ -25,6 +25,13 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ============================================================================*/
 
+/****************************************************************************
+ * TODO
+ * X support
+ * Touchscreen settings
+ * Display brightness settings
+ ****************************************************************************/
+
 #include <locale.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
@@ -49,6 +56,7 @@ typedef struct {
     int rotation;
     float freq;
     GList *modes;
+    char *touchscreen;
 } monitor_t;
 
 #define MAX_MONS 10
@@ -74,6 +82,7 @@ int scale = 8;
 int rev_time;
 int tid;
 GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb;
+GList *touchscreens;
 
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
@@ -358,6 +367,12 @@ static void set_enable (GtkCheckMenuItem *item, gpointer data)
     gtk_widget_queue_draw (da);
 }
 
+static void set_touchscreen (GtkMenuItem *item, gpointer data)
+{
+    int mon = (long) data;
+    mons[mon].touchscreen = g_strdup_printf (gtk_menu_item_get_label (item));
+}
+
 /*----------------------------------------------------------------------------*/
 /* Context menu */
 /*----------------------------------------------------------------------------*/
@@ -365,11 +380,12 @@ static void set_enable (GtkCheckMenuItem *item, gpointer data)
 static GtkWidget *create_menu (long mon)
 {
     GList *model;
-    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu;
+    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu, *tmenu;
     int lastw, lasth;
     float lastf;
     output_mode_t *mode;
     gboolean show_f = FALSE;
+    char *ts;
 
     menu = gtk_menu_new ();
 
@@ -430,6 +446,24 @@ static GtkWidget *create_menu (long mon)
     item = gtk_menu_item_new_with_label (_("Orientation"));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), omenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+
+    if (touchscreens)
+    {
+        tmenu = gtk_menu_new ();
+        model = touchscreens;
+        while (model)
+        {
+            ts = (char *) model->data;
+            item = gtk_check_menu_item_new_with_label (ts);
+            gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), !g_strcmp0 (mons[mon].touchscreen, ts));
+            g_signal_connect (item, "activate", G_CALLBACK (set_touchscreen), (gpointer) mon);
+            gtk_menu_shell_append (GTK_MENU_SHELL (tmenu), item);
+            model = model->next;
+        }
+        item = gtk_menu_item_new_with_label (_("Touchscreen"));
+        gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), tmenu);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    }
 
     gtk_widget_show_all (menu);
     return menu;
@@ -740,6 +774,34 @@ static void show_confirm_dialog (void)
 }
 
 /*----------------------------------------------------------------------------*/
+/* Touchscreens */
+/*----------------------------------------------------------------------------*/
+
+static void find_touchscreens (void)
+{
+    FILE *fp;
+    char *line, *ts;
+    size_t len;
+
+    touchscreens = NULL;
+
+    fp = popen ("libinput list-devices | tr \\\\n @ | sed 's/@@/\\\n/g' | grep \"Capabilities:.*touch\" | sed 's/Device:[ \\\t]*//' | cut -d @ -f 1", "r");
+    if (fp)
+    {
+        line = NULL;
+        len = 0;
+        while (getline (&line, &len, fp) != -1)
+        {
+            ts = g_strdup (line);
+            ts[strlen(ts) - 1] = 0;
+            touchscreens = g_list_append (touchscreens, ts);
+        }
+        free (line);
+        pclose (fp);
+    }
+}
+
+/*----------------------------------------------------------------------------*/
 /* Event handlers */
 /*----------------------------------------------------------------------------*/
 
@@ -859,6 +921,8 @@ int main (int argc, char *argv[])
     merge_configs (infile, outfile);
     g_free (infile);
     g_free (outfile);
+
+    find_touchscreens ();
 
     gtk_init (&argc, &argv);
 
