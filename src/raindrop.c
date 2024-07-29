@@ -81,6 +81,8 @@ GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb;
 
 static int screen_w (monitor_t mon);
 static int screen_h (monitor_t mon);
+static void copy_config (monitor_t *from, monitor_t *to);
+static gboolean compare_config (monitor_t *from, monitor_t *to);
 static void update_greeter_config (void);
 static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
 static void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time);
@@ -819,6 +821,16 @@ int main (int argc, char *argv[])
     textdomain (GETTEXT_PACKAGE);
 
     load_current_config ();
+
+    // ensure the config file reflects the current state, or undo won't work...
+    char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
+    char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
+    char *cmd = g_strdup_printf ("cp %s %s", outfile, infile);
+    system (cmd);
+    g_free (cmd);
+    merge_configs (infile, outfile);
+    g_free (infile);
+    g_free (outfile);
 
     gtk_init (&argc, &argv);
 
