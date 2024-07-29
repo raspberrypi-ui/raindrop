@@ -701,6 +701,7 @@ static void handle_cancel (GtkButton *, gpointer)
 
 static void handle_ok (GtkButton *, gpointer)
 {
+    g_source_remove (tid);
     gtk_widget_destroy (conf);
 }
 
