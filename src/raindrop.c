@@ -972,11 +972,21 @@ static void handle_close (GtkButton *, gpointer)
 
 static void handle_apply (GtkButton *, gpointer)
 {
+    char *infile, *outfile, *cmd;
+
     if (compare_config (mons, bmons)) return;
 
-    char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
-    char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
-    char *cmd = g_strdup_printf ("cp %s %s", outfile, infile);
+    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
+    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
+    system (cmd);
+    g_free (cmd);
+    g_free (infile);
+    g_free (outfile);
+
+    infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
+    outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
+    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
     system (cmd);
     g_free (cmd);
 
@@ -988,6 +998,7 @@ static void handle_apply (GtkButton *, gpointer)
 
     system ("pkill --signal SIGHUP kanshi");
     load_current_config ();
+    load_current_touchscreens ();
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, TRUE);
     show_confirm_dialog ();
@@ -995,17 +1006,27 @@ static void handle_apply (GtkButton *, gpointer)
 
 static void handle_undo (GtkButton *, gpointer)
 {
-    char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
-    char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
-    char *cmd = g_strdup_printf ("cp %s %s", infile, outfile);
+    char *infile, *outfile, *cmd;
+
+    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
+    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
     system (cmd);
     g_free (cmd);
+    g_free (infile);
+    g_free (outfile);
 
+    infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
+    outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
+    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
+    system (cmd);
+    g_free (cmd);
     g_free (infile);
     g_free (outfile);
 
     system ("pkill --signal SIGHUP kanshi");
     load_current_config ();
+    load_current_touchscreens ();
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, FALSE);
 }
