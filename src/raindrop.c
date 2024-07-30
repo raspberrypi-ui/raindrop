@@ -120,6 +120,8 @@ static void handle_ok (GtkButton *, gpointer);
 static gboolean revert_timeout (gpointer data);
 static void show_confirm_dialog (void);
 static void find_touchscreens (void);
+static void load_current_touchscreens (void);
+static void write_touchscreens (void);
 static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer);
 static void handle_close (GtkButton *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
@@ -878,6 +880,57 @@ static void load_current_touchscreens (void)
     g_free (infile);
 }
 
+static void write_touchscreens (void)
+{
+    char *infile;
+    xmlDocPtr xDoc;
+    xmlNode *root_node, *child_node;
+    int m;
+
+    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+
+    xmlInitParser ();
+    LIBXML_TEST_VERSION
+    if (g_file_test (infile, G_FILE_TEST_IS_REGULAR))
+    {
+        xDoc = xmlParseFile (infile);
+        if (!xDoc) xDoc = xmlNewDoc ((xmlChar *) "1.0");
+    }
+    else xDoc = xmlNewDoc ((xmlChar *) "1.0");
+
+    root_node = xmlDocGetRootElement (xDoc);
+    if (root_node == NULL)
+    {
+        root_node = xmlNewNode (NULL, (xmlChar *) "openbox_config");
+        xmlDocSetRootElement (xDoc, root_node);
+        xmlNewNs (root_node, (xmlChar *) "http://openbox.org/3.4/rc", NULL);
+    }
+
+    for (child_node = root_node->children; child_node; child_node = child_node->next)
+    {
+        if (child_node->type != XML_ELEMENT_NODE) continue;
+        if (!g_strcmp0 ((char *) child_node->name, "touch"))
+        {
+            xmlUnlinkNode (child_node);
+            xmlFreeNode (child_node);
+        }
+    }
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].modes == NULL) continue;
+        if (mons[m].touchscreen == NULL) continue;
+        child_node = xmlNewNode (NULL, (xmlChar *) "touch");
+        xmlSetProp (child_node, (xmlChar *) "deviceName", (xmlChar *) mons[m].touchscreen);
+        xmlSetProp (child_node, (xmlChar *) "mapToOutput", (xmlChar *) mons[m].name);
+        xmlAddChild (root_node, child_node);
+    }
+
+    xmlSaveFile (infile, xDoc);
+    xmlFreeDoc (xDoc);
+    xmlCleanupParser ();
+}
+
 /*----------------------------------------------------------------------------*/
 /* Event handlers */
 /*----------------------------------------------------------------------------*/
@@ -925,6 +978,7 @@ static void handle_apply (GtkButton *, gpointer)
     g_free (cmd);
 
     merge_configs (infile, outfile);
+    write_touchscreens ();
 
     g_free (infile);
     g_free (outfile);
