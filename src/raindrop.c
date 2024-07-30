@@ -159,6 +159,8 @@ static void copy_config (monitor_t *from, monitor_t *to)
         to[m].y = from[m].y;
         to[m].rotation = from[m].rotation;
         to[m].freq = from[m].freq;
+        if (to[m].touchscreen) g_free (to[m].touchscreen);
+        if (from[m].touchscreen) to[m].touchscreen = g_strdup (from[m].touchscreen);
     }
 }
 
@@ -175,6 +177,7 @@ static gboolean compare_config (monitor_t *from, monitor_t *to)
         if (to[m].y != from[m].y) return FALSE;
         if (to[m].rotation != from[m].rotation) return FALSE;
         if (to[m].freq != from[m].freq) return FALSE;
+        if (g_strcmp0 (to[m].touchscreen, from[m].touchscreen)) return FALSE;
     }
     return TRUE;
 }
@@ -876,7 +879,6 @@ static void load_current_touchscreens (void)
 
     xmlFreeDoc (xDoc);
     xmlCleanupParser ();
-
     g_free (infile);
 }
 
@@ -929,6 +931,7 @@ static void write_touchscreens (void)
     xmlSaveFile (infile, xDoc);
     xmlFreeDoc (xDoc);
     xmlCleanupParser ();
+    g_free (infile);
 }
 
 /*----------------------------------------------------------------------------*/
