@@ -92,7 +92,7 @@ static int screen_w (monitor_t mon);
 static int screen_h (monitor_t mon);
 static void copy_config (monitor_t *from, monitor_t *to);
 static gboolean compare_config (monitor_t *from, monitor_t *to);
-static void update_greeter_config (void);
+static void update_labwc_greeter_config (void);
 static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
 static void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time);
 static void drag_end (GtkWidget *, GdkDragContext *, gpointer);
@@ -187,24 +187,21 @@ static gboolean compare_config (monitor_t *from, monitor_t *to)
     return TRUE;
 }
 
-static void update_greeter_config (void)
+static void update_labwc_greeter_config (void)
 {
     char *cmd;
 
-    if (gtk_widget_get_sensitive (undo))
-    {
-        system (SUDO_PREFIX "mkdir -p /usr/share/labwc/");
+    system (SUDO_PREFIX "mkdir -p /usr/share/labwc/");
 
-        cmd = g_strdup_printf (SUDO_PREFIX "cp %s/kanshi/config /usr/share/labwc/config.kanshi",
-            g_get_user_config_dir ());
-        system (cmd);
-        g_free (cmd);
+    cmd = g_strdup_printf (SUDO_PREFIX "cp %s/kanshi/config /usr/share/labwc/config.kanshi",
+        g_get_user_config_dir ());
+    system (cmd);
+    g_free (cmd);
 
-        cmd = g_strdup_printf (SUDO_PREFIX "cp %s/labwc/rcgreeter.xml /usr/share/labwc/rc.xml",
-            g_get_user_config_dir ());
-        system (cmd);
-        g_free (cmd);
-    }
+    cmd = g_strdup_printf (SUDO_PREFIX "cp %s/labwc/rcgreeter.xml /usr/share/labwc/rc.xml",
+        g_get_user_config_dir ());
+    system (cmd);
+    g_free (cmd);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1044,7 +1041,7 @@ static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
 
 static void handle_close (GtkButton *, gpointer)
 {
-    update_greeter_config ();
+    if (gtk_widget_get_sensitive (undo)) update_labwc_greeter_config ();
     gtk_main_quit ();
 }
 
@@ -1098,7 +1095,7 @@ static void handle_menu (GtkButton *btn, gpointer)
 
 static void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
-    update_greeter_config ();
+    if (gtk_widget_get_sensitive (undo)) update_labwc_greeter_config ();
     gtk_main_quit ();
 }
 
