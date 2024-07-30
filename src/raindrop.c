@@ -28,7 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /****************************************************************************
  * TODO
  * X support
- * Touchscreen settings
  * Display brightness settings
  ****************************************************************************/
 
@@ -110,18 +109,24 @@ static GtkWidget *create_menu (long mon);
 static GtkWidget *create_popup (void);
 static void add_mode (int monitor, int w, int h, float f);
 static gint mode_compare (gconstpointer a, gconstpointer b);
-static void load_current_config (void);
+static void load_labwc_config (void);
 static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
 static int write_config (FILE *fp);
 static void merge_configs (const char *infile, const char *outfile);
+static void save_labwc_config (void);
+static void reload_labwc_config (void);
+static void revert_labwc_config (void);
 static void set_timer_msg (void);
 static void handle_cancel (GtkButton *, gpointer);
 static void handle_ok (GtkButton *, gpointer);
 static gboolean revert_timeout (gpointer data);
 static void show_confirm_dialog (void);
 static void find_touchscreens (void);
-static void load_current_touchscreens (void);
+static void load_labwc_touchscreens (void);
 static void write_touchscreens (char *filename);
+static void save_labwc_touchscreens (void);
+static void reload_labwc_touchscreens (void);
+static void revert_labwc_touchscreens (void);
 static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer);
 static void handle_close (GtkButton *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
@@ -546,7 +551,7 @@ static gint mode_compare (gconstpointer a, gconstpointer b)
     return 0;
 }
 
-static void load_current_config (void)
+static void load_labwc_config (void)
 {
     FILE *fp;
     char *line, *cptr;
@@ -741,6 +746,38 @@ static void merge_configs (const char *infile, const char *outfile)
     fclose (foutp);
 }
 
+static void save_labwc_config (void)
+{
+    char *infile, *outfile, *cmd;
+
+    infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
+    outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
+    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
+    system (cmd);
+    g_free (cmd);
+    merge_configs (infile, outfile);
+    g_free (infile);
+    g_free (outfile);
+}
+
+static void reload_labwc_config (void)
+{
+    system ("pkill --signal SIGHUP kanshi");
+}
+
+static void revert_labwc_config (void)
+{
+    char *infile, *outfile, *cmd;
+
+    infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
+    outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
+    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
+    system (cmd);
+    g_free (cmd);
+    g_free (infile);
+    g_free (outfile);
+}
+
 /*----------------------------------------------------------------------------*/
 /* Confirmation / reversion */
 /*----------------------------------------------------------------------------*/
@@ -828,7 +865,7 @@ static void find_touchscreens (void)
     }
 }
 
-static void load_current_touchscreens (void)
+static void load_labwc_touchscreens (void)
 {
     xmlDocPtr xDoc;
     xmlNode *root_node, *child_node;
@@ -936,6 +973,45 @@ static void write_touchscreens (char *filename)
     xmlCleanupParser ();
 }
 
+static void save_labwc_touchscreens (void)
+{
+    char *infile, *outfile, *cmd;
+
+    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
+    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
+    system (cmd);
+    g_free (cmd);
+    write_touchscreens (outfile);
+    g_free (infile);
+    g_free (outfile);
+
+    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rcgreeter.xml", NULL);
+    cmd = g_strdup_printf ("cp /usr/share/labwc/rc.xml %s", outfile);
+    system (cmd);
+    g_free (cmd);
+    write_touchscreens (outfile);
+    g_free (outfile);
+}
+
+static void reload_labwc_touchscreens (void)
+{
+    system ("labwc --reconfigure");
+}
+
+static void revert_labwc_touchscreens (void)
+{
+    char *infile, *outfile, *cmd;
+
+    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
+    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
+    system (cmd);
+    g_free (cmd);
+    g_free (infile);
+    g_free (outfile);
+}
+
 /*----------------------------------------------------------------------------*/
 /* Event handlers */
 /*----------------------------------------------------------------------------*/
@@ -974,38 +1050,17 @@ static void handle_close (GtkButton *, gpointer)
 
 static void handle_apply (GtkButton *, gpointer)
 {
-    char *infile, *outfile, *cmd;
-
     if (compare_config (mons, bmons)) return;
 
-    infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
-    outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
-    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
-    system (cmd);
-    g_free (cmd);
-    merge_configs (infile, outfile);
-    g_free (infile);
-    g_free (outfile);
+    save_labwc_config ();
+    save_labwc_touchscreens ();
 
-    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
-    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
-    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
-    system (cmd);
-    g_free (cmd);
-    write_touchscreens (outfile);
-    g_free (infile);
-    g_free (outfile);
+    reload_labwc_config ();
+    reload_labwc_touchscreens ();
 
-    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rcgreeter.xml", NULL);
-    cmd = g_strdup_printf ("cp /usr/share/labwc/rc.xml %s", outfile);
-    system (cmd);
-    g_free (cmd);
-    write_touchscreens (outfile);
-    g_free (outfile);
+    load_labwc_config ();
+    load_labwc_touchscreens ();
 
-    system ("pkill --signal SIGHUP kanshi");
-    load_current_config ();
-    load_current_touchscreens ();
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, TRUE);
     show_confirm_dialog ();
@@ -1013,27 +1068,15 @@ static void handle_apply (GtkButton *, gpointer)
 
 static void handle_undo (GtkButton *, gpointer)
 {
-    char *infile, *outfile, *cmd;
+    revert_labwc_config ();
+    revert_labwc_touchscreens ();
 
-    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
-    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
-    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
-    system (cmd);
-    g_free (cmd);
-    g_free (infile);
-    g_free (outfile);
+    reload_labwc_config ();
+    reload_labwc_touchscreens ();
 
-    infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
-    outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
-    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
-    system (cmd);
-    g_free (cmd);
-    g_free (infile);
-    g_free (outfile);
+    load_labwc_config ();
+    load_labwc_touchscreens ();
 
-    system ("pkill --signal SIGHUP kanshi");
-    load_current_config ();
-    load_current_touchscreens ();
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, FALSE);
 }
@@ -1072,20 +1115,13 @@ int main (int argc, char *argv[])
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
 
-    load_current_config ();
-    load_current_touchscreens ();
+    find_touchscreens ();
+
+    load_labwc_config ();
+    load_labwc_touchscreens ();
 
     // ensure the config file reflects the current state, or undo won't work...
-    char *infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
-    char *outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
-    char *cmd = g_strdup_printf ("cp %s %s", outfile, infile);
-    system (cmd);
-    g_free (cmd);
-    merge_configs (infile, outfile);
-    g_free (infile);
-    g_free (outfile);
-
-    find_touchscreens ();
+    save_labwc_config ();
 
     gtk_init (&argc, &argv);
 
