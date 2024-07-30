@@ -121,7 +121,7 @@ static gboolean revert_timeout (gpointer data);
 static void show_confirm_dialog (void);
 static void find_touchscreens (void);
 static void load_current_touchscreens (void);
-static void write_touchscreens (void);
+static void write_touchscreens (char *filename);
 static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer);
 static void handle_close (GtkButton *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
@@ -188,9 +188,15 @@ static void update_greeter_config (void)
 
     if (gtk_widget_get_sensitive (undo))
     {
+        system (SUDO_PREFIX "mkdir -p /usr/share/labwc/");
+
         cmd = g_strdup_printf (SUDO_PREFIX "cp %s/kanshi/config /usr/share/labwc/config.kanshi",
             g_get_user_config_dir ());
-        system (SUDO_PREFIX "mkdir -p /usr/share/labwc/");
+        system (cmd);
+        g_free (cmd);
+
+        cmd = g_strdup_printf (SUDO_PREFIX "cp %s/labwc/rcgreeter.xml /usr/share/labwc/rc.xml",
+            g_get_user_config_dir ());
         system (cmd);
         g_free (cmd);
     }
@@ -882,20 +888,17 @@ static void load_current_touchscreens (void)
     g_free (infile);
 }
 
-static void write_touchscreens (void)
+static void write_touchscreens (char *filename)
 {
-    char *infile;
     xmlDocPtr xDoc;
     xmlNode *root_node, *child_node;
     int m;
 
-    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
-
     xmlInitParser ();
     LIBXML_TEST_VERSION
-    if (g_file_test (infile, G_FILE_TEST_IS_REGULAR))
+    if (g_file_test (filename, G_FILE_TEST_IS_REGULAR))
     {
-        xDoc = xmlParseFile (infile);
+        xDoc = xmlParseFile (filename);
         if (!xDoc) xDoc = xmlNewDoc ((xmlChar *) "1.0");
     }
     else xDoc = xmlNewDoc ((xmlChar *) "1.0");
@@ -928,10 +931,9 @@ static void write_touchscreens (void)
         xmlAddChild (root_node, child_node);
     }
 
-    xmlSaveFile (infile, xDoc);
+    xmlSaveFile (filename, xDoc);
     xmlFreeDoc (xDoc);
     xmlCleanupParser ();
-    g_free (infile);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -976,24 +978,29 @@ static void handle_apply (GtkButton *, gpointer)
 
     if (compare_config (mons, bmons)) return;
 
-    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
-    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
-    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
-    system (cmd);
-    g_free (cmd);
-    g_free (infile);
-    g_free (outfile);
-
     infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
     outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
     cmd = g_strdup_printf ("cp %s %s", outfile, infile);
     system (cmd);
     g_free (cmd);
-
     merge_configs (infile, outfile);
-    write_touchscreens ();
-
     g_free (infile);
+    g_free (outfile);
+
+    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
+    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
+    system (cmd);
+    g_free (cmd);
+    write_touchscreens (outfile);
+    g_free (infile);
+    g_free (outfile);
+
+    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rcgreeter.xml", NULL);
+    cmd = g_strdup_printf ("cp /usr/share/labwc/rc.xml %s", outfile);
+    system (cmd);
+    g_free (cmd);
+    write_touchscreens (outfile);
     g_free (outfile);
 
     system ("pkill --signal SIGHUP kanshi");
