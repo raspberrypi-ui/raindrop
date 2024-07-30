@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * TODO
  * X support
  * Display brightness settings
+ * Sort monitors menu
  ****************************************************************************/
 
 #include <locale.h>
@@ -57,6 +58,7 @@ typedef struct {
     float freq;
     GList *modes;
     char *touchscreen;
+    char *backlight;
 } monitor_t;
 
 #define MAX_MONS 10
@@ -105,6 +107,7 @@ static void set_orientation (GtkMenuItem *item, gpointer data);
 static void add_orientation (GtkWidget *menu, long mon, const char *orient, int rotation);
 static void set_enable (GtkCheckMenuItem *item, gpointer data);
 static void set_touchscreen (GtkMenuItem *item, gpointer data);
+static void set_brightness (GtkMenuItem *item, gpointer data);
 static GtkWidget *create_menu (long mon);
 static GtkWidget *create_popup (void);
 static void add_mode (int monitor, int w, int h, float f);
@@ -127,6 +130,9 @@ static void write_touchscreens (char *filename);
 static void save_labwc_touchscreens (void);
 static void reload_labwc_touchscreens (void);
 static void revert_labwc_touchscreens (void);
+static void find_backlights (void);
+static int get_backlight (int mon);
+static void set_backlight (int mon, int level);
 static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer);
 static void handle_close (GtkButton *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
@@ -401,6 +407,15 @@ static void set_touchscreen (GtkMenuItem *item, gpointer data)
     }
 }
 
+static void set_brightness (GtkMenuItem *item, gpointer data)
+{
+    int mon = (long) data;
+    int val;
+
+    sscanf (gtk_menu_item_get_label (item), "%d%%", &val);
+    set_backlight (mon, val);
+}
+
 /*----------------------------------------------------------------------------*/
 /* Context menu */
 /*----------------------------------------------------------------------------*/
@@ -408,8 +423,8 @@ static void set_touchscreen (GtkMenuItem *item, gpointer data)
 static GtkWidget *create_menu (long mon)
 {
     GList *model;
-    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu, *tmenu;
-    int lastw, lasth;
+    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu, *tmenu, *bmenu;
+    int lastw, lasth, level;
     float lastf;
     output_mode_t *mode;
     gboolean show_f = FALSE;
@@ -493,6 +508,24 @@ static GtkWidget *create_menu (long mon)
         gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     }
 
+    if (mons[mon].backlight)
+    {
+        bmenu = gtk_menu_new ();
+        level = 100;
+        while (level > -10)
+        {
+            ts = g_strdup_printf ("%d%%", level);
+            item = gtk_check_menu_item_new_with_label (ts);
+            gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), get_backlight (mon) == level);
+            g_signal_connect (item, "activate", G_CALLBACK (set_brightness), (gpointer) mon);
+            gtk_menu_shell_append (GTK_MENU_SHELL (bmenu), item);
+            level -= 10;
+        }
+        item = gtk_menu_item_new_with_label (_("Brightness"));
+        gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), bmenu);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    }
+
     gtk_widget_show_all (menu);
     return menu;
 }
@@ -567,6 +600,7 @@ static void load_labwc_config (void)
         mons[mon].modes = NULL;
         mons[mon].enabled = FALSE;
         mons[mon].touchscreen = NULL;
+        mons[mon].backlight = NULL;
     }
 
     mon = -1;
@@ -1010,6 +1044,98 @@ static void revert_labwc_touchscreens (void)
 }
 
 /*----------------------------------------------------------------------------*/
+/* Backlights */
+/*----------------------------------------------------------------------------*/
+
+static void find_backlights (void)
+{
+    DIR *dir;
+    struct dirent *entry;
+    FILE *fp;
+    char *filename;
+    char buffer[32];
+    int m;
+
+    if (dir = opendir ("/sys/class/backlight"))
+    {
+        while (entry = readdir (dir))
+        {
+            if (entry->d_name[0] != '.')
+            {
+                filename = g_build_filename ("/sys/class/backlight", entry->d_name, "display_name", NULL);
+                if (fp = fopen (filename, "r"))
+                {
+                    if (fscanf (fp, "%s", buffer) == 1)
+                    {
+                        for (m = 0; m < MAX_MONS; m++)
+                        {
+                            if (mons[m].modes == NULL) continue;
+                            if (!g_strcmp0 (mons[m].name, buffer))
+                            {
+                                mons[m].backlight = g_strdup_printf (entry->d_name);
+                            }
+                        }
+                    }
+                    fclose (fp);
+                }
+                g_free (filename);
+            }
+        }
+        closedir (dir);
+    }
+}
+
+static int get_backlight (int mon)
+{
+    char *filename;
+    int level, max;
+    FILE *fp;
+
+    filename = g_build_filename ("/sys/class/backlight", mons[mon].backlight, "brightness", NULL);
+    if (fp = fopen (filename, "r"))
+    {
+        if (fscanf (fp, "%d", &level) != 1) level = -1;
+        fclose (fp);
+    }
+    g_free (filename);
+
+    filename = g_build_filename ("/sys/class/backlight", mons[mon].backlight, "max_brightness", NULL);
+    if (fp = fopen (filename, "r"))
+    {
+        if (fscanf (fp, "%d", &max) != 1) max = -1;
+        fclose (fp);
+    }
+    g_free (filename);
+
+    if (level == -1 || max == -1) return -1;
+
+    return 10 * ((level * 100 / max) / 10);
+}
+
+static void set_backlight (int mon, int level)
+{
+    char *filename;
+    int max;
+    FILE *fp;
+
+    filename = g_build_filename ("/sys/class/backlight", mons[mon].backlight, "max_brightness", NULL);
+    if (fp = fopen (filename, "r"))
+    {
+        if (fscanf (fp, "%d", &max) != 1) max = -1;
+        fclose (fp);
+    }
+    g_free (filename);
+
+    filename = g_build_filename ("/sys/class/backlight", mons[mon].backlight, "brightness", NULL);
+    if (fp = fopen (filename, "w"))
+    {
+        fprintf (fp, "%d", ((level * max) + 50) / 100);
+        fclose (fp);
+    }
+    g_free (filename);
+}
+
+/*----------------------------------------------------------------------------*/
 /* Event handlers */
 /*----------------------------------------------------------------------------*/
 
@@ -1112,10 +1238,11 @@ int main (int argc, char *argv[])
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
 
-    find_touchscreens ();
-
     load_labwc_config ();
     load_labwc_touchscreens ();
+
+    find_touchscreens ();
+    find_backlights ();
 
     // ensure the config file reflects the current state, or undo won't work...
     save_labwc_config ();
