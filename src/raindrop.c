@@ -28,8 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /****************************************************************************
  * TODO
  * X support
- * Display brightness settings
- * Sort monitors menu
  ****************************************************************************/
 
 #include <locale.h>
@@ -537,7 +535,8 @@ static GtkWidget *create_menu (long mon)
 static GtkWidget *create_popup (void)
 {
     GtkWidget *item, *menu, *pmenu;
-    int m;
+    GList *list, *l;
+    int m, count;
 
     menu = gtk_menu_new ();
 
@@ -547,7 +546,16 @@ static GtkWidget *create_popup (void)
         item = gtk_menu_item_new_with_label (mons[m].name);
         pmenu = create_menu (m);
         gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), pmenu);
-        gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+
+        count = 0;
+        list = gtk_container_get_children (GTK_CONTAINER (menu));
+        for (l = list; l; l = l->next)
+        {
+            if (g_strcmp0 (mons[m].name, gtk_menu_item_get_label (GTK_MENU_ITEM (l->data))) < 0) break;
+            count++;
+        }
+        gtk_menu_shell_insert (GTK_MENU_SHELL (menu), item, count);
+        g_list_free (list);
     }
     gtk_widget_show_all (menu);
     return menu;
