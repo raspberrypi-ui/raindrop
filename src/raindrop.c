@@ -746,13 +746,13 @@ static int write_config (FILE *fp)
         }
         else if (mons[m].freq == 0.0)
         {
-            fprintf (fp, "\t\toutput %s mode --custom %dx%d position %d,%d transform %s\n",
+            fprintf (fp, "\t\toutput %s enable mode --custom %dx%d position %d,%d transform %s\n",
                 mons[m].name, mons[m].width, mons[m].height,
                 mons[m].x, mons[m].y, orients[mons[m].rotation / 90]);
         }
         else
         {
-            fprintf (fp, "\t\toutput %s mode %dx%d@%.3f position %d,%d transform %s\n",
+            fprintf (fp, "\t\toutput %s enable mode %dx%d@%.3f position %d,%d transform %s\n",
                 mons[m].name, mons[m].width, mons[m].height, mons[m].freq,
                 mons[m].x, mons[m].y, orients[mons[m].rotation / 90]);
         }
