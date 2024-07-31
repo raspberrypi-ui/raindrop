@@ -1056,14 +1056,14 @@ static void find_backlights (void)
     char buffer[32];
     int m;
 
-    if (dir = opendir ("/sys/class/backlight"))
+    if ((dir = opendir ("/sys/class/backlight")))
     {
-        while (entry = readdir (dir))
+        while ((entry = readdir (dir)))
         {
             if (entry->d_name[0] != '.')
             {
                 filename = g_build_filename ("/sys/class/backlight", entry->d_name, "display_name", NULL);
-                if (fp = fopen (filename, "r"))
+                if ((fp = fopen (filename, "r")))
                 {
                     if (fscanf (fp, "%s", buffer) == 1)
                     {
@@ -1092,7 +1092,7 @@ static int get_backlight (int mon)
     FILE *fp;
 
     filename = g_build_filename ("/sys/class/backlight", mons[mon].backlight, "brightness", NULL);
-    if (fp = fopen (filename, "r"))
+    if ((fp = fopen (filename, "r")))
     {
         if (fscanf (fp, "%d", &level) != 1) level = -1;
         fclose (fp);
@@ -1100,7 +1100,7 @@ static int get_backlight (int mon)
     g_free (filename);
 
     filename = g_build_filename ("/sys/class/backlight", mons[mon].backlight, "max_brightness", NULL);
-    if (fp = fopen (filename, "r"))
+    if ((fp = fopen (filename, "r")))
     {
         if (fscanf (fp, "%d", &max) != 1) max = -1;
         fclose (fp);
@@ -1119,7 +1119,7 @@ static void set_backlight (int mon, int level)
     FILE *fp;
 
     filename = g_build_filename ("/sys/class/backlight", mons[mon].backlight, "max_brightness", NULL);
-    if (fp = fopen (filename, "r"))
+    if ((fp = fopen (filename, "r")))
     {
         if (fscanf (fp, "%d", &max) != 1) max = -1;
         fclose (fp);
@@ -1127,7 +1127,7 @@ static void set_backlight (int mon, int level)
     g_free (filename);
 
     filename = g_build_filename ("/sys/class/backlight", mons[mon].backlight, "brightness", NULL);
-    if (fp = fopen (filename, "w"))
+    if ((fp = fopen (filename, "w")))
     {
         fprintf (fp, "%d", ((level * max) + 50) / 100);
         fclose (fp);
