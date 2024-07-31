@@ -600,7 +600,6 @@ static void load_labwc_config (void)
         mons[mon].modes = NULL;
         mons[mon].enabled = FALSE;
         mons[mon].touchscreen = NULL;
-        mons[mon].backlight = NULL;
     }
 
     mon = -1;
@@ -1060,6 +1059,11 @@ static void find_backlights (void)
     char *filename;
     char buffer[32];
     int m;
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        mons[m].backlight = NULL;
+    }
 
     if ((dir = opendir ("/sys/class/backlight")))
     {
