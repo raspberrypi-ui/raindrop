@@ -959,7 +959,7 @@ static void load_labwc_touchscreens (void)
 static void write_touchscreens (char *filename)
 {
     xmlDocPtr xDoc;
-    xmlNode *root_node, *child_node;
+    xmlNode *root_node, *child_node, *next;
     int m;
 
     xmlInitParser ();
@@ -979,14 +979,19 @@ static void write_touchscreens (char *filename)
         xmlNewNs (root_node, (xmlChar *) "http://openbox.org/3.4/rc", NULL);
     }
 
-    for (child_node = root_node->children; child_node; child_node = child_node->next)
+    child_node = root_node->children;
+    while (child_node)
     {
-        if (child_node->type != XML_ELEMENT_NODE) continue;
-        if (!g_strcmp0 ((char *) child_node->name, "touch"))
+        next = child_node->next;
+        if (child_node->type == XML_ELEMENT_NODE)
         {
-            xmlUnlinkNode (child_node);
-            xmlFreeNode (child_node);
+            if (!g_strcmp0 ((char *) child_node->name, "touch"))
+            {
+                xmlUnlinkNode (child_node);
+                xmlFreeNode (child_node);
+            }
         }
+        child_node = next;
     }
 
     for (m = 0; m < MAX_MONS; m++)
