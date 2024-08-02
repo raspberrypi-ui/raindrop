@@ -70,6 +70,9 @@ typedef struct {
 
 #define load_config() {if (use_x) load_openbox_config (); else load_labwc_config ();}
 #define save_config() {if (use_x) save_openbox_config (); else save_labwc_config ();}
+#define reload_config() {if (use_x) reload_openbox_config (); else reload_labwc_config ();}
+#define revert_config() {if (use_x) revert_openbox_config (); else revert_labwc_config ();}
+#define update_system_config() {if (use_x) update_openbox_system_config (); else update_labwc_system_config ();}
 
 /*----------------------------------------------------------------------------*/
 /* Global data */
@@ -97,7 +100,8 @@ static int screen_w (monitor_t mon);
 static int screen_h (monitor_t mon);
 static void copy_config (monitor_t *from, monitor_t *to);
 static gboolean compare_config (monitor_t *from, monitor_t *to);
-static void update_labwc_greeter_config (void);
+static void update_labwc_system_config (void);
+static void update_openbox_system_config (void);
 static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
 static void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time);
 static void drag_end (GtkWidget *, GdkDragContext *, gpointer);
@@ -121,9 +125,12 @@ static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
 static int write_config (FILE *fp);
 static void merge_configs (const char *infile, const char *outfile);
 static void save_labwc_config (void);
+static void write_dispsetup (const char *infile);
 static void save_openbox_config (void);
 static void reload_labwc_config (void);
+static void reload_openbox_config (void);
 static void revert_labwc_config (void);
+static void revert_openbox_config (void);
 static void set_timer_msg (void);
 static void handle_cancel (GtkButton *, gpointer);
 static void handle_ok (GtkButton *, gpointer);
@@ -198,7 +205,7 @@ static gboolean compare_config (monitor_t *from, monitor_t *to)
     return TRUE;
 }
 
-static void update_labwc_greeter_config (void)
+static void update_labwc_system_config (void)
 {
     char *cmd;
 
@@ -211,6 +218,15 @@ static void update_labwc_greeter_config (void)
 
     cmd = g_strdup_printf (SUDO_PREFIX "cp %s/labwc/rcgreeter.xml /usr/share/labwc/rc.xml",
         g_get_user_config_dir ());
+    system (cmd);
+    g_free (cmd);
+}
+
+static void update_openbox_system_config (void)
+{
+    char *cmd;
+
+    cmd = g_strdup_printf (SUDO_PREFIX "cp /var/tmp/dispsetup.sh /usr/share/dispsetup.sh");
     system (cmd);
     g_free (cmd);
 }
@@ -896,10 +912,11 @@ static void save_labwc_config (void)
     g_free (outfile);
 }
 
-static void save_openbox_config (void)
+static void write_dispsetup (const char *infile)
 {
     char *cmd, *mstr, *tmp;
     int m;
+    FILE *fp;
 
     cmd = g_strdup ("xrandr");
     for (m = 0; m < MAX_MONS; m++)
@@ -915,14 +932,34 @@ static void save_openbox_config (void)
         g_free (mstr);
         cmd = tmp;
     }
-    printf ("%s\n", cmd);
+
+    fp = fopen (infile, "wb");
+    fprintf (fp, "#!/bin/sh\n");
+    fprintf (fp, "%s\n", cmd);
+    fclose (fp);
+    g_free (cmd);
+}
+
+static void save_openbox_config (void)
+{
+    const char *infile = "/var/tmp/dispsetup.bak";
+    const char *outfile = "/var/tmp/dispsetup.sh";
+    char *cmd;
+
+    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
     system (cmd);
     g_free (cmd);
+    write_dispsetup (outfile);
 }
 
 static void reload_labwc_config (void)
 {
     system ("pkill --signal SIGHUP kanshi");
+}
+
+static void reload_openbox_config (void)
+{
+    system ("/bin/bash /var/tmp/dispsetup.sh");
 }
 
 static void revert_labwc_config (void)
@@ -936,6 +973,17 @@ static void revert_labwc_config (void)
     g_free (cmd);
     g_free (infile);
     g_free (outfile);
+}
+
+static void revert_openbox_config (void)
+{
+    const char *infile = "/var/tmp/dispsetup.bak";
+    const char *outfile = "/var/tmp/dispsetup.sh";
+    char *cmd;
+
+    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
+    system (cmd);
+    g_free (cmd);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1306,7 +1354,7 @@ static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
 
 static void handle_close (GtkButton *, gpointer)
 {
-    if (gtk_widget_get_sensitive (undo)) update_labwc_greeter_config ();
+    if (gtk_widget_get_sensitive (undo)) update_system_config ();
     gtk_main_quit ();
 }
 
@@ -1317,10 +1365,10 @@ static void handle_apply (GtkButton *, gpointer)
     save_config ();
     save_labwc_touchscreens ();
 
-    reload_labwc_config ();
+    reload_config ();
     reload_labwc_touchscreens ();
 
-    load_labwc_config ();
+    load_config ();
     load_labwc_touchscreens ();
 
     gtk_widget_queue_draw (da);
@@ -1330,13 +1378,13 @@ static void handle_apply (GtkButton *, gpointer)
 
 static void handle_undo (GtkButton *, gpointer)
 {
-    revert_labwc_config ();
+    revert_config ();
     revert_labwc_touchscreens ();
 
-    reload_labwc_config ();
+    reload_config ();
     reload_labwc_touchscreens ();
 
-    load_labwc_config ();
+    load_config ();
     load_labwc_touchscreens ();
 
     gtk_widget_queue_draw (da);
@@ -1360,7 +1408,7 @@ static void handle_menu (GtkButton *btn, gpointer)
 
 static void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
-    if (gtk_widget_get_sensitive (undo)) update_labwc_greeter_config ();
+    if (gtk_widget_get_sensitive (undo)) update_system_config ();
     gtk_main_quit ();
 }
 
