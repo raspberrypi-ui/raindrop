@@ -68,11 +68,15 @@ typedef struct {
 
 #define SUDO_PREFIX "env SUDO_ASKPASS=/usr/share/raindrop/pwdraindrop.sh sudo -A "
 
+#define load_config() {if (use_x) load_openbox_config (); else load_labwc_config ();}
+#define save_config() {if (use_x) save_openbox_config (); else save_labwc_config ();}
+
 /*----------------------------------------------------------------------------*/
 /* Global data */
 /*----------------------------------------------------------------------------*/
 
 const char *orients[4] = { "normal", "90", "180", "270" };
+const char *xorients[4] = { "normal", "left", "inverted", "right" };
 
 monitor_t mons[MAX_MONS], bmons[MAX_MONS];
 int mousex, mousey;
@@ -83,6 +87,7 @@ int rev_time;
 int tid;
 GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb;
 GList *touchscreens;
+gboolean use_x;
 
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
@@ -111,10 +116,12 @@ static GtkWidget *create_popup (void);
 static void add_mode (int monitor, int w, int h, float f);
 static gint mode_compare (gconstpointer a, gconstpointer b);
 static void load_labwc_config (void);
+static void load_openbox_config (void);
 static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
 static int write_config (FILE *fp);
 static void merge_configs (const char *infile, const char *outfile);
 static void save_labwc_config (void);
+static void save_openbox_config (void);
 static void reload_labwc_config (void);
 static void revert_labwc_config (void);
 static void set_timer_msg (void);
@@ -687,6 +694,97 @@ static void load_labwc_config (void)
     copy_config (mons, bmons);
 }
 
+static void load_openbox_config (void)
+{
+    FILE *fp;
+    char *line, *cptr;
+    size_t len;
+    int mon, w, h, i;
+    float f;
+
+    for (mon = 0; mon < MAX_MONS; mon++)
+    {
+        mons[mon].width = 0;
+        mons[mon].height = 0;
+        mons[mon].x = 0;
+        mons[mon].y = 0;
+        mons[mon].freq = 0.0;
+        mons[mon].rotation = 0;
+        mons[mon].modes = NULL;
+        mons[mon].enabled = FALSE;
+        mons[mon].touchscreen = NULL;
+    }
+
+    mon = -1;
+
+    fp = popen ("xrandr", "r");
+    if (fp)
+    {
+        line = NULL;
+        len = 0;
+        while (getline (&line, &len, fp) != -1)
+        {
+            if (line[0] != ' ')
+            {
+                if (strstr (line, "Screen")) continue;
+                if (!strstr (line, " connected")) continue;
+                mon++;
+                cptr = strtok (line, " ");
+                mons[mon].name = g_strdup (cptr);
+                while (cptr[0] != '(')
+                {
+                    if (cptr[0] >= '1' && cptr[0] <= '9')
+                    {
+                        sscanf (cptr, "%dx%d+%d+%d", &mons[mon].width, &mons[mon].height, &mons[mon].x, &mons[mon].y);
+                        mons[mon].enabled = TRUE;
+                    }
+                    for (i = 0; i < 4; i++)
+                        if (strstr (cptr, xorients[i])) mons[mon].rotation = i * 90;
+                    cptr = strtok (NULL, " ");
+                }
+                if (mons[mon].rotation == 90 || mons[mon].rotation == 270)
+                {
+                    i = mons[mon].width;
+                    mons[mon].width = mons[mon].height;
+                    mons[mon].height = i;
+                }
+            }
+            else if (line[4] != ' ')
+            {
+                cptr = strtok (line, " ");
+                while (cptr)
+                {
+                    if (strstr (cptr, "x")) sscanf (cptr, "%dx%d", &w, &h);
+                    if (strstr (cptr, "."))
+                    {
+                        sscanf (cptr, "%f", &f);
+                        add_mode (mon, w, h, f);
+                    }
+                    if (mons[mon].enabled && strstr (cptr, "*")) mons[mon].freq = f;
+                    if (!mons[mon].enabled && *cptr == '+')
+                    {
+                        mons[mon].width = w;
+                        mons[mon].height = h;
+                        mons[mon].freq = f;
+                    }
+                    cptr = strtok (NULL, " ");
+                }
+            }
+        }
+        free (line);
+        pclose (fp);
+    }
+
+    for (mon = 0; mon < MAX_MONS; mon++)
+    {
+        if (mons[mon].modes == NULL) continue;
+        mons[mon].modes = g_list_sort (mons[mon].modes, mode_compare);
+    }
+    copy_config (mons, bmons);
+}
+
+
+
 /*----------------------------------------------------------------------------*/
 /* Writing config */
 /*----------------------------------------------------------------------------*/
@@ -796,6 +894,30 @@ static void save_labwc_config (void)
     merge_configs (infile, outfile);
     g_free (infile);
     g_free (outfile);
+}
+
+static void save_openbox_config (void)
+{
+    char *cmd, *mstr, *tmp;
+    int m;
+
+    cmd = g_strdup ("xrandr");
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].modes == NULL) continue;
+        if (mons[m].enabled)
+            mstr = g_strdup_printf ("--output %s --mode %dx%d --rate %0.3f --pos %dx%d --rotate %s", mons[m].name,
+                mons[m].width, mons[m].height, mons[m].freq, mons[m].x, mons[m].y, xorients[mons[m].rotation / 90]);
+        else
+            mstr = g_strdup_printf ("--output %s --off", mons[m].name);
+        tmp = g_strdup_printf ("%s %s", cmd, mstr);
+        g_free (cmd);
+        g_free (mstr);
+        cmd = tmp;
+    }
+    printf ("%s\n", cmd);
+    system (cmd);
+    g_free (cmd);
 }
 
 static void reload_labwc_config (void)
@@ -1192,7 +1314,7 @@ static void handle_apply (GtkButton *, gpointer)
 {
     if (compare_config (mons, bmons)) return;
 
-    save_labwc_config ();
+    save_config ();
     save_labwc_touchscreens ();
 
     reload_labwc_config ();
@@ -1255,14 +1377,17 @@ int main (int argc, char *argv[])
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
 
-    load_labwc_config ();
+    if (getenv ("WAYLAND_DISPLAY")) use_x = FALSE;
+    else use_x = TRUE;
+
+    load_config ();
     load_labwc_touchscreens ();
 
     find_touchscreens ();
     find_backlights ();
 
     // ensure the config file reflects the current state, or undo won't work...
-    save_labwc_config ();
+    save_config ();
 
     gtk_init (&argc, &argv);
 
