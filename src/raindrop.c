@@ -103,7 +103,7 @@ static gboolean compare_config (monitor_t *from, monitor_t *to);
 static void update_labwc_system_config (void);
 static void update_openbox_system_config (void);
 static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
-static void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time);
+static gboolean drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time);
 static void drag_end (GtkWidget *, GdkDragContext *, gpointer);
 static void check_frequency (int mon);
 static void set_resolution (GtkMenuItem *item, gpointer data);
@@ -288,9 +288,11 @@ static void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
 /* Dragging monitor outlines */
 /*----------------------------------------------------------------------------*/
 
-static void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time)
+static gboolean drag_motion (GtkWidget *da, GdkDragContext *context, gint x, gint y, guint time)
 {
     int m, xs, ys;
+
+    gdk_drag_status (context, 0, time);
 
     if (curmon != -1)
     {
@@ -314,6 +316,7 @@ static void drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint 
 
         gtk_widget_queue_draw (da);
     }
+    return TRUE;
 }
 
 static void drag_end (GtkWidget *, GdkDragContext *, gpointer)
