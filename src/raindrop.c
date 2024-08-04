@@ -103,6 +103,7 @@ static gboolean compare_config (monitor_t *from, monitor_t *to);
 static void update_labwc_system_config (void);
 static void update_openbox_system_config (void);
 static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
+static void drag_begin (GtkWidget *, GdkDragContext *, gpointer);
 static gboolean drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time);
 static void drag_end (GtkWidget *, GdkDragContext *, gpointer);
 static void check_frequency (int mon);
@@ -287,6 +288,11 @@ static void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
 /*----------------------------------------------------------------------------*/
 /* Dragging monitor outlines */
 /*----------------------------------------------------------------------------*/
+
+static void drag_begin (GtkWidget *, GdkDragContext *context, gpointer)
+{
+    gtk_drag_set_icon_name (context, "view-fullscreen", 16, 16);
+}
 
 static gboolean drag_motion (GtkWidget *da, GdkDragContext *context, gint x, gint y, guint time)
 {
@@ -1453,6 +1459,7 @@ int main (int argc, char *argv[])
     gtk_drag_dest_set (da, 0, NULL, 0, 0);
     g_signal_connect (da, "draw", G_CALLBACK (draw), NULL);
     g_signal_connect (da, "button-press-event", G_CALLBACK (button_press_event), NULL);
+    g_signal_connect (da, "drag-begin", G_CALLBACK (drag_begin), NULL);
     g_signal_connect (da, "drag-motion", G_CALLBACK (drag_motion), NULL);
     g_signal_connect (da, "drag-end", G_CALLBACK (drag_end), NULL);
     gtk_window_set_default_size (GTK_WINDOW (win), 500, 400);
