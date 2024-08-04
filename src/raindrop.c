@@ -103,9 +103,6 @@ static gboolean compare_config (monitor_t *from, monitor_t *to);
 static void update_labwc_system_config (void);
 static void update_openbox_system_config (void);
 static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
-static void drag_begin (GtkWidget *, GdkDragContext *, gpointer);
-static gboolean drag_motion (GtkWidget *da, GdkDragContext *, gint x, gint y, guint time);
-static void drag_end (GtkWidget *, GdkDragContext *, gpointer);
 static void check_frequency (int mon);
 static void set_resolution (GtkMenuItem *item, gpointer data);
 static void add_resolution (GtkWidget *menu, long mon, int width, int height);
@@ -147,6 +144,8 @@ static void find_backlights (void);
 static int get_backlight (int mon);
 static void set_backlight (int mon, int level);
 static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer);
+static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion ev, gpointer);
+static void button_release_event (GtkWidget *, GdkEventButton, gpointer);
 static void handle_close (GtkButton *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
 static void handle_undo (GtkButton *, gpointer);
@@ -283,51 +282,6 @@ static void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
         pango_cairo_show_layout (cr, layout);
         cairo_restore (cr);
     }
-}
-
-/*----------------------------------------------------------------------------*/
-/* Dragging monitor outlines */
-/*----------------------------------------------------------------------------*/
-
-static void drag_begin (GtkWidget *, GdkDragContext *context, gpointer)
-{
-    gtk_drag_set_icon_name (context, "view-fullscreen", 16, 16);
-}
-
-static gboolean drag_motion (GtkWidget *da, GdkDragContext *context, gint x, gint y, guint time)
-{
-    int m, xs, ys;
-
-    gdk_drag_status (context, 0, time);
-
-    if (curmon != -1)
-    {
-        mons[curmon].x = UPSCALE(x - mousex);
-        mons[curmon].y = UPSCALE(y - mousey);
-
-        // constrain to screen
-        if (mons[curmon].x < 0) mons[curmon].x = 0;
-        if (mons[curmon].y < 0) mons[curmon].y = 0;
-
-        // snap top and left to other windows bottom or right, or to 0,0
-        for (m = 0; m < MAX_MONS; m++)
-        {
-            if (mons[m].modes == NULL) continue;
-
-            xs = m != curmon ? mons[m].x + screen_w (mons[m]) : 0;
-            ys = m != curmon ? mons[m].y + screen_h (mons[m]) : 0;
-            if (mons[curmon].x > xs - SNAP_DISTANCE && mons[curmon].x < xs + SNAP_DISTANCE) mons[curmon].x = xs;
-            if (mons[curmon].y > ys - SNAP_DISTANCE && mons[curmon].y < ys + SNAP_DISTANCE) mons[curmon].y = ys;
-        }
-
-        gtk_widget_queue_draw (da);
-    }
-    return TRUE;
-}
-
-static void drag_end (GtkWidget *, GdkDragContext *, gpointer)
-{
-    curmon = -1;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1357,8 +1311,43 @@ static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
     if (ev.button == 3)
     {
         menu = create_menu (curmon);
+        curmon = -1;
         gtk_menu_popup_at_pointer (GTK_MENU (menu), gtk_get_current_event ());
     }
+}
+
+static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion ev, gpointer)
+{
+    int m, xs, ys;
+
+    if (curmon != -1)
+    {
+        mons[curmon].x = UPSCALE(ev.x - mousex);
+        mons[curmon].y = UPSCALE(ev.y - mousey);
+
+        // constrain to screen
+        if (mons[curmon].x < 0) mons[curmon].x = 0;
+        if (mons[curmon].y < 0) mons[curmon].y = 0;
+
+        // snap top and left to other windows bottom or right, or to 0,0
+        for (m = 0; m < MAX_MONS; m++)
+        {
+            if (mons[m].modes == NULL) continue;
+
+            xs = m != curmon ? mons[m].x + screen_w (mons[m]) : 0;
+            ys = m != curmon ? mons[m].y + screen_h (mons[m]) : 0;
+            if (mons[curmon].x > xs - SNAP_DISTANCE && mons[curmon].x < xs + SNAP_DISTANCE) mons[curmon].x = xs;
+            if (mons[curmon].y > ys - SNAP_DISTANCE && mons[curmon].y < ys + SNAP_DISTANCE) mons[curmon].y = ys;
+        }
+
+        gtk_widget_queue_draw (da);
+    }
+    return FALSE;
+}
+
+static void button_release_event (GtkWidget *, GdkEventButton, gpointer)
+{
+    curmon = -1;
 }
 
 static void handle_close (GtkButton *, gpointer)
@@ -1454,14 +1443,13 @@ int main (int argc, char *argv[])
     win = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
     g_signal_connect (win, "delete-event", G_CALLBACK (end_program), NULL);
 
+    curmon = -1;
     da = (GtkWidget *) gtk_builder_get_object (builder, "da");
-    gtk_drag_source_set (da, GDK_BUTTON1_MASK, NULL, 0, 0);
-    gtk_drag_dest_set (da, 0, NULL, 0, 0);
+    gtk_widget_set_events (da, GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
     g_signal_connect (da, "draw", G_CALLBACK (draw), NULL);
     g_signal_connect (da, "button-press-event", G_CALLBACK (button_press_event), NULL);
-    g_signal_connect (da, "drag-begin", G_CALLBACK (drag_begin), NULL);
-    g_signal_connect (da, "drag-motion", G_CALLBACK (drag_motion), NULL);
-    g_signal_connect (da, "drag-end", G_CALLBACK (drag_end), NULL);
+    g_signal_connect (da, "button-release-event", G_CALLBACK (button_release_event), NULL);
+    g_signal_connect (da, "motion-notify-event", G_CALLBACK (motion_notify_event), NULL);
     gtk_window_set_default_size (GTK_WINDOW (win), 500, 400);
 
     undo = (GtkWidget *) gtk_builder_get_object (builder, "btn_undo");
