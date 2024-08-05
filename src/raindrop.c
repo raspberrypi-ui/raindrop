@@ -104,7 +104,7 @@ static int screen_w (monitor_t mon);
 static int screen_h (monitor_t mon);
 static void copy_config (monitor_t *from, monitor_t *to);
 static gboolean compare_config (monitor_t *from, monitor_t *to);
-static void clear_config (void);
+static void clear_config (gboolean first);
 static gint mode_compare (gconstpointer a, gconstpointer b);
 static void sort_modes (void);
 static void update_labwc_system_config (void);
@@ -212,7 +212,7 @@ static gboolean compare_config (monitor_t *from, monitor_t *to)
     return TRUE;
 }
 
-static void clear_config (void)
+static void clear_config (gboolean first)
 {
     int m;
     for (m = 0; m < MAX_MONS; m++)
@@ -226,6 +226,15 @@ static void clear_config (void)
         mons[m].modes = NULL;
         mons[m].enabled = FALSE;
         mons[m].touchscreen = NULL;
+        if (!first)
+        {
+            if (mons[m].name) g_free (mons[m].name);
+            if (mons[m].touchscreen) g_free (mons[m].touchscreen);
+            if (mons[m].backlight) g_free (mons[m].backlight);
+        }
+        mons[m].name = NULL;
+        mons[m].touchscreen = NULL;
+        mons[m].backlight = NULL;
     }
 }
 
@@ -617,7 +626,7 @@ static void load_labwc_config (void)
     int mon, w, h, i;
     float f;
 
-    clear_config ();
+    clear_config (FALSE);
 
     mon = -1;
 
@@ -688,6 +697,7 @@ static void load_labwc_config (void)
         pclose (fp);
     }
 
+    find_backlights ();
     sort_modes ();
     copy_config (mons, bmons);
 }
@@ -700,7 +710,7 @@ static void load_openbox_config (void)
     int mon, w, h, i;
     float f;
 
-    clear_config ();
+    clear_config (FALSE);
 
     mon = -1;
 
@@ -762,6 +772,7 @@ static void load_openbox_config (void)
         pclose (fp);
     }
 
+    find_backlights ();
     sort_modes ();
     copy_config (mons, bmons);
 }
@@ -1141,10 +1152,20 @@ static void load_openbox_touchscreens (void)
             {
                 if (matrix[0] != 1.0 || matrix[1] != 0.0 || matrix[2] != 0.0 || matrix[3] != 0.0 || matrix[4] != 1.0 || matrix[5] != 0.0)
                 {
-                    tw = sw * matrix[0];
-                    th = sh * matrix[4];
-                    tx = sw * matrix[2];
-                    ty = sh * matrix[5];
+                    tw = ((float) sw + 0.5) * (matrix[0] + matrix[1]);
+                    th = ((float) sh + 0.5) * (matrix[3] + matrix[4]);
+                    tx = ((float) sw + 0.5) * matrix[2];
+                    ty = ((float) sh + 0.5) * matrix[5];
+                    if (tw < 0) tx += tw;
+                    if (th < 0) ty += th;
+                    if (tw * th < 0)
+                    {
+                        m = tw;
+                        tw = th;
+                        th = m;
+                    }
+                    if (tw < 0) tw *= -1;
+                    if (th < 0) th *= -1;
 
                     for (m = 0; m < MAX_MONS; m++)
                     {
@@ -1268,11 +1289,6 @@ static void find_backlights (void)
     char buffer[32];
     int m;
 
-    for (m = 0; m < MAX_MONS; m++)
-    {
-        mons[m].backlight = NULL;
-    }
-
     if ((dir = opendir ("/sys/class/backlight")))
     {
         while ((entry = readdir (dir)))
@@ -1289,7 +1305,7 @@ static void find_backlights (void)
                             if (mons[m].modes == NULL) continue;
                             if (!g_strcmp0 (mons[m].name, buffer))
                             {
-                                mons[m].backlight = g_strdup_printf (entry->d_name);
+                                mons[m].backlight = g_strdup (entry->d_name);
                             }
                         }
                     }
@@ -1493,12 +1509,12 @@ int main (int argc, char *argv[])
     if (getenv ("WAYLAND_DISPLAY")) use_x = FALSE;
     else use_x = TRUE;
 
+    clear_config (TRUE);
+
     find_touchscreens ();
 
     load_config ();
     load_touchscreens ();
-
-    find_backlights ();
 
     // ensure the config file reflects the current state, or undo won't work...
     save_config ();
