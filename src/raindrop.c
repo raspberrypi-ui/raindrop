@@ -1113,6 +1113,57 @@ static void load_labwc_touchscreens (void)
 
 static void load_openbox_touchscreens (void)
 {
+    FILE *fp;
+    GList *ts;
+    int sw, sh, tw, th, tx, ty, m;
+    char *cmd;
+    float matrix[6];
+
+    // get the screen size
+    fp = popen ("xrandr | grep current  | cut -d \" \" -f 8,10", "r");
+    if (fp)
+    {
+        if (fscanf (fp, "%d %d,", &sw, &sh) != 2)
+        {
+            sw = -1;
+            sh = -1;
+        }
+        pclose (fp);
+    }
+    if (sw == -1 || sh == -1) return;
+
+    // get the coord transform matrix for each touch device and calculate coords of touch device
+    ts = touchscreens;
+    while (ts)
+    {
+        cmd = g_strdup_printf ("xinput --list-props \"%s\" | grep Coordinate | cut -d : -f 2", (char *) ts->data);
+        fp = popen (cmd, "r");
+        if (fp)
+        {
+            if (fscanf (fp, "%f, %f, %f, %f, %f, %f,", matrix, matrix + 1, matrix + 2, matrix + 3, matrix + 4, matrix + 5) == 6)
+            {
+                if (matrix[0] != 1.0 || matrix[1] != 0.0 || matrix[2] != 0.0 || matrix[3] != 0.0 || matrix[4] != 1.0 || matrix[5] != 0.0)
+                {
+                    tw = sw * matrix[0];
+                    th = sh * matrix[4];
+                    tx = sw * matrix[2];
+                    ty = sh * matrix[5];
+
+                    for (m = 0; m < MAX_MONS; m++)
+                    {
+                        if (mons[m].modes == NULL) continue;
+                        if (mons[m].width == tw && mons[m].height == th && mons[m].x == tx && mons[m].y == ty)
+                        {
+                            mons[m].touchscreen = g_strdup ((char *) ts->data);
+                        }
+                    }
+                }
+            }
+            pclose (fp);
+        }
+        g_free (cmd);
+        ts = ts->next;
+    }
 }
 
 static void write_touchscreens (char *filename)
@@ -1444,11 +1495,11 @@ int main (int argc, char *argv[])
 
     if (getenv ("WAYLAND_DISPLAY")) use_x = FALSE;
     else use_x = TRUE;
+    find_touchscreens ();
 
     load_config ();
     load_touchscreens ();
 
-    find_touchscreens ();
     find_backlights ();
 
     // ensure the config file reflects the current state, or undo won't work...
