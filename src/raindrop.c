@@ -1,5 +1,5 @@
 /*============================================================================
-Copyright (c) 20248 Raspberry Pi Holdings Ltd.
+Copyright (c) 2024 Raspberry Pi Holdings Ltd.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -69,9 +69,13 @@ typedef struct {
 #define SUDO_PREFIX "env SUDO_ASKPASS=/usr/share/raindrop/pwdraindrop.sh sudo -A "
 
 #define load_config() {if (use_x) load_openbox_config (); else load_labwc_config ();}
+#define load_touchscreens() {if (use_x) load_openbox_touchscreens (); else load_labwc_touchscreens ();}
 #define save_config() {if (use_x) save_openbox_config (); else save_labwc_config ();}
+#define save_touchscreens() {if (!use_x) save_labwc_touchscreens ();}
 #define reload_config() {if (use_x) reload_openbox_config (); else reload_labwc_config ();}
+#define reload_touchscreens() {if (!use_x) reload_labwc_touchscreens ();}
 #define revert_config() {if (use_x) revert_openbox_config (); else revert_labwc_config ();}
+#define revert_touchscreens() {if (!use_x) revert_labwc_touchscreens ();}
 #define update_system_config() {if (use_x) update_openbox_system_config (); else update_labwc_system_config ();}
 
 /*----------------------------------------------------------------------------*/
@@ -136,6 +140,7 @@ static gboolean revert_timeout (gpointer data);
 static void show_confirm_dialog (void);
 static void find_touchscreens (void);
 static void load_labwc_touchscreens (void);
+static void load_openbox_touchscreens (void);
 static void write_touchscreens (char *filename);
 static void save_labwc_touchscreens (void);
 static void reload_labwc_touchscreens (void);
@@ -897,10 +902,20 @@ static void write_dispsetup (const char *infile)
     }
 
     fp = fopen (infile, "wb");
-    fprintf (fp, "#!/bin/sh\n");
-    fprintf (fp, "%s\n", cmd);
-    fclose (fp);
+    fprintf (fp, "#!/bin/sh\nif %s --dryrun; then\n\t%s\nfi\n", cmd, cmd);
     g_free (cmd);
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].modes == NULL) continue;
+        if (mons[m].touchscreen == NULL) continue;
+        cmd = g_strdup_printf ("xinput --map-to-output \"%s\" %s", mons[m].touchscreen, mons[m].name);
+        fprintf (fp, "if xinput | grep -q \"%s\" ; then\n\t%s\nfi\n", mons[m].touchscreen, cmd);
+        g_free (cmd);
+    }
+
+    fprintf (fp, "if [ -e /usr/share/ovscsetup.sh ] ; then\n\t/usr/share/ovscsetup.sh\nfi\nexit 0");
+    fclose (fp);
 }
 
 static void save_openbox_config (void)
@@ -1094,6 +1109,10 @@ static void load_labwc_touchscreens (void)
     xmlFreeDoc (xDoc);
     xmlCleanupParser ();
     g_free (infile);
+}
+
+static void load_openbox_touchscreens (void)
+{
 }
 
 static void write_touchscreens (char *filename)
@@ -1361,13 +1380,13 @@ static void handle_apply (GtkButton *, gpointer)
     if (compare_config (mons, bmons)) return;
 
     save_config ();
-    save_labwc_touchscreens ();
+    save_touchscreens ();
 
     reload_config ();
-    reload_labwc_touchscreens ();
+    reload_touchscreens ();
 
     load_config ();
-    load_labwc_touchscreens ();
+    load_touchscreens ();
 
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, TRUE);
@@ -1377,13 +1396,13 @@ static void handle_apply (GtkButton *, gpointer)
 static void handle_undo (GtkButton *, gpointer)
 {
     revert_config ();
-    revert_labwc_touchscreens ();
+    revert_touchscreens ();
 
     reload_config ();
-    reload_labwc_touchscreens ();
+    reload_touchscreens ();
 
     load_config ();
-    load_labwc_touchscreens ();
+    load_touchscreens ();
 
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, FALSE);
@@ -1427,7 +1446,7 @@ int main (int argc, char *argv[])
     else use_x = TRUE;
 
     load_config ();
-    load_labwc_touchscreens ();
+    load_touchscreens ();
 
     find_touchscreens ();
     find_backlights ();
