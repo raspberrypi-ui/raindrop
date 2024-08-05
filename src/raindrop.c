@@ -25,11 +25,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ============================================================================*/
 
-/****************************************************************************
- * TODO
- * X support
- ****************************************************************************/
-
 #include <locale.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
@@ -1137,6 +1132,9 @@ static void load_openbox_touchscreens (void)
     char *cmd;
     float matrix[6];
 
+    char *loc = setlocale (LC_NUMERIC, "");
+    setlocale (LC_NUMERIC, "C");
+
     // get the screen size
     fp = popen ("xrandr | grep current  | cut -d \" \" -f 8,10", "r");
     if (fp)
@@ -1192,6 +1190,8 @@ static void load_openbox_touchscreens (void)
         g_free (cmd);
         ts = ts->next;
     }
+
+    setlocale (LC_NUMERIC, loc);
 }
 
 static void write_touchscreens (char *filename)
