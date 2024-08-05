@@ -626,6 +626,9 @@ static void load_labwc_config (void)
     int mon, w, h, i;
     float f;
 
+    char *loc = setlocale (LC_NUMERIC, "");
+    setlocale (LC_NUMERIC, "C");
+
     clear_config (FALSE);
 
     mon = -1;
@@ -700,6 +703,8 @@ static void load_labwc_config (void)
     find_backlights ();
     sort_modes ();
     copy_config (mons, bmons);
+
+    setlocale (LC_NUMERIC, loc);
 }
 
 static void load_openbox_config (void)
@@ -832,6 +837,9 @@ static int write_config (FILE *fp)
 {
     int m, nmons = 0;
 
+    char *loc = setlocale (LC_NUMERIC, "");
+    setlocale (LC_NUMERIC, "C");
+
     fprintf (fp, "profile {\n");
     for (m = 0; m < MAX_MONS; m++)
     {
@@ -855,6 +863,8 @@ static int write_config (FILE *fp)
         }
     }
     fprintf (fp, "}\n\n");
+
+    setlocale (LC_NUMERIC, loc);
 
     return nmons;
 }
