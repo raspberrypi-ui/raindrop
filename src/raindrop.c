@@ -937,7 +937,7 @@ static void reload_labwc_config (void)
 
 static void reload_openbox_config (void)
 {
-    system ("/bin/bash /var/tmp/dispsetup.sh");
+    system ("/bin/bash /var/tmp/dispsetup.sh > /dev/null");
 }
 
 static void revert_labwc_config (void)
@@ -1495,6 +1495,7 @@ int main (int argc, char *argv[])
 
     if (getenv ("WAYLAND_DISPLAY")) use_x = FALSE;
     else use_x = TRUE;
+
     find_touchscreens ();
 
     load_config ();
