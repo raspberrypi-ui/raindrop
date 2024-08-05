@@ -104,6 +104,9 @@ static int screen_w (monitor_t mon);
 static int screen_h (monitor_t mon);
 static void copy_config (monitor_t *from, monitor_t *to);
 static gboolean compare_config (monitor_t *from, monitor_t *to);
+static void clear_config (void);
+static gint mode_compare (gconstpointer a, gconstpointer b);
+static void sort_modes (void);
 static void update_labwc_system_config (void);
 static void update_openbox_system_config (void);
 static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
@@ -120,7 +123,6 @@ static void set_brightness (GtkMenuItem *item, gpointer data);
 static GtkWidget *create_menu (long mon);
 static GtkWidget *create_popup (void);
 static void add_mode (int monitor, int w, int h, float f);
-static gint mode_compare (gconstpointer a, gconstpointer b);
 static void load_labwc_config (void);
 static void load_openbox_config (void);
 static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
@@ -208,6 +210,47 @@ static gboolean compare_config (monitor_t *from, monitor_t *to)
         if (g_strcmp0 (to[m].touchscreen, from[m].touchscreen)) return FALSE;
     }
     return TRUE;
+}
+
+static void clear_config (void)
+{
+    int m;
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        mons[m].width = 0;
+        mons[m].height = 0;
+        mons[m].x = 0;
+        mons[m].y = 0;
+        mons[m].freq = 0.0;
+        mons[m].rotation = 0;
+        mons[m].modes = NULL;
+        mons[m].enabled = FALSE;
+        mons[m].touchscreen = NULL;
+    }
+}
+
+static gint mode_compare (gconstpointer a, gconstpointer b)
+{
+    output_mode_t *moda = (output_mode_t *) a;
+    output_mode_t *modb = (output_mode_t *) b;
+
+    if (moda->width > modb->width) return -1;
+    if (moda->width < modb->width) return 1;
+    if (moda->height > modb->height) return-1;
+    if (moda->height < modb->height) return 1;
+    if (moda->freq > modb->freq) return -1;
+    if (moda->freq < modb->freq) return 1;
+    return 0;
+}
+
+static void sort_modes (void)
+{
+    int m;
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].modes == NULL) continue;
+        mons[m].modes = g_list_sort (mons[m].modes, mode_compare);
+    }
 }
 
 static void update_labwc_system_config (void)
@@ -566,20 +609,6 @@ static void add_mode (int monitor, int w, int h, float f)
     mons[monitor].modes = g_list_append (mons[monitor].modes, mod);
 }
 
-static gint mode_compare (gconstpointer a, gconstpointer b)
-{
-    output_mode_t *moda = (output_mode_t *) a;
-    output_mode_t *modb = (output_mode_t *) b;
-
-    if (moda->width > modb->width) return -1;
-    if (moda->width < modb->width) return 1;
-    if (moda->height > modb->height) return-1;
-    if (moda->height < modb->height) return 1;
-    if (moda->freq > modb->freq) return -1;
-    if (moda->freq < modb->freq) return 1;
-    return 0;
-}
-
 static void load_labwc_config (void)
 {
     FILE *fp;
@@ -588,18 +617,7 @@ static void load_labwc_config (void)
     int mon, w, h, i;
     float f;
 
-    for (mon = 0; mon < MAX_MONS; mon++)
-    {
-        mons[mon].width = 0;
-        mons[mon].height = 0;
-        mons[mon].x = 0;
-        mons[mon].y = 0;
-        mons[mon].freq = 0.0;
-        mons[mon].rotation = 0;
-        mons[mon].modes = NULL;
-        mons[mon].enabled = FALSE;
-        mons[mon].touchscreen = NULL;
-    }
+    clear_config ();
 
     mon = -1;
 
@@ -670,11 +688,7 @@ static void load_labwc_config (void)
         pclose (fp);
     }
 
-    for (mon = 0; mon < MAX_MONS; mon++)
-    {
-        if (mons[mon].modes == NULL) continue;
-        mons[mon].modes = g_list_sort (mons[mon].modes, mode_compare);
-    }
+    sort_modes ();
     copy_config (mons, bmons);
 }
 
@@ -686,18 +700,7 @@ static void load_openbox_config (void)
     int mon, w, h, i;
     float f;
 
-    for (mon = 0; mon < MAX_MONS; mon++)
-    {
-        mons[mon].width = 0;
-        mons[mon].height = 0;
-        mons[mon].x = 0;
-        mons[mon].y = 0;
-        mons[mon].freq = 0.0;
-        mons[mon].rotation = 0;
-        mons[mon].modes = NULL;
-        mons[mon].enabled = FALSE;
-        mons[mon].touchscreen = NULL;
-    }
+    clear_config ();
 
     mon = -1;
 
@@ -759,15 +762,9 @@ static void load_openbox_config (void)
         pclose (fp);
     }
 
-    for (mon = 0; mon < MAX_MONS; mon++)
-    {
-        if (mons[mon].modes == NULL) continue;
-        mons[mon].modes = g_list_sort (mons[mon].modes, mode_compare);
-    }
+    sort_modes ();
     copy_config (mons, bmons);
 }
-
-
 
 /*----------------------------------------------------------------------------*/
 /* Writing config */
