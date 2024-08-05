@@ -1,0 +1,201 @@
+# ARandR
+# Copyright (C) YEAR chrysn
+# This file is distributed under the same license as the arandr package.
+# Mohammad Alhargan <malham1@gmail.com>, 2010
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: XRandR\n"
+"Report-Msgid-Bugs-To: chrysn@fsfe.org\n"
+"POT-Creation-Date: 2015-05-21 10:02+0200\n"
+"PO-Revision-Date: 2015-06-02 10:30+0200\n"
+"Last-Translator: Bakr Al-Tamimi <Bakr.Tamimi@gmail.com>\n"
+"Language-Team: Arabic "
+"<https://hosted.weblate.org/projects/arandr/translations/ar/>\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+"X-Generator: Weblate 2.3-dev\n"
+"X-Poedit-Language: Arabic\n"
+
+#: screenlayout/gui.py:117
+msgid "_Layout"
+msgstr "_تصميم"
+
+#: screenlayout/gui.py:128
+msgid "_View"
+msgstr "_عرض"
+
+#: screenlayout/gui.py:130
+msgid "_Outputs"
+msgstr "_مخرجات"
+
+#: screenlayout/gui.py:131
+msgid "Dummy"
+msgstr "وهمي"
+
+#: screenlayout/gui.py:133
+msgid "_System"
+msgstr "_نظام"
+
+#: screenlayout/gui.py:134
+msgid "_Keybindings (Metacity)"
+msgstr "_اختصار لوحة المفاتيح (Metacity)"
+
+#: screenlayout/gui.py:136
+msgid "_Help"
+msgstr "_مساعدة"
+
+#: screenlayout/gui.py:140
+msgid "1:4"
+msgstr "1:4"
+
+#: screenlayout/gui.py:141
+msgid "1:8"
+msgstr "1:8"
+
+#: screenlayout/gui.py:142
+msgid "1:16"
+msgstr "1:16"
+
+#: screenlayout/gui.py:189
+msgid "Script Properties"
+msgstr "خصائص السكربت"
+
+#: screenlayout/gui.py:201
+msgid "Script"
+msgstr "سكربت"
+
+#: screenlayout/gui.py:217
+#, python-format
+msgid ""
+"XRandR failed:\n"
+"%s"
+msgstr ""
+"فشل XRandR:\n"
+"%s"
+
+#: screenlayout/gui.py:227
+msgid "Open Layout"
+msgstr "فتح تصميم"
+
+#: screenlayout/gui.py:239
+msgid "Save Layout"
+msgstr "حفظ تصميم"
+
+#: screenlayout/meta.py:23
+msgid "ARandR Screen Layout Editor"
+msgstr "شاشة تحرير تصميم ARandR"
+
+#. # translators, please translate in the style of "Another XRandR GUI
+#. # (ein weiteres GUI für XRandR)" so users get both the explanation of
+#. # the acronym and a localized version.
+#: screenlayout/meta.py:27
+msgid "Another XRandR GUI"
+msgstr "واجهة مستخدم XRandR أخرى"
+
+#: screenlayout/metacity.py:53
+msgid "Accelerator"
+msgstr "مسرّع"
+
+#: screenlayout/metacity.py:54
+msgid "Action"
+msgstr "تأثير"
+
+#: screenlayout/metacity.py:120
+msgid "disabled"
+msgstr "غير مفعّل"
+
+#: screenlayout/metacity.py:135
+msgid "New accelerator..."
+msgstr "مسرّع جديد..."
+
+#: screenlayout/metacity.py:192
+msgid "no action"
+msgstr "لا مؤثرات"
+
+#: screenlayout/metacity.py:228
+msgid "incompatible configuration"
+msgstr "إعداد غير متوافق"
+
+#: screenlayout/metacity.py:235
+msgid "other application"
+msgstr "تطبيق آخر"
+
+#: screenlayout/metacity.py:255
+#, python-format
+msgid "No files in %(folder)r. Save a layout first."
+msgstr "لا توجد ملفات في %(folder)r احفظ التصميم أولاً."
+
+#: screenlayout/metacity.py:284
+msgid "gconf not available."
+msgstr "gconf  غير متوفر"
+
+#: screenlayout/metacity.py:285
+msgid ""
+"In order to configure metacity, you need to have the python gconf module "
+"installed."
+msgstr "من أجل إعداد ميتستي ، يجب تثبيت وحدة gconf  المبرمجة بلغة بايثون."
+
+#: screenlayout/metacity.py:292
+msgid "Keybindings (via Metacity)"
+msgstr "اختصار لوحة المفاتيح (via Metacity)"
+
+#: screenlayout/metacity.py:305
+msgid ""
+"Click on a button in the left column and press a key combination you want to "
+"bind to a certain screen layout. (Use backspace to clear accelerators, "
+"escape to abort editing.) Then, select one or more layouts in the right "
+"column.\n"
+"\n"
+"This will only work if you use metacity or another program reading its "
+"configuration."
+msgstr ""
+"انقر على زر في العمود الأيسر واضغط على تركيبة المفاتيح التي تريد تخصيصها. "
+"(استخدم مفتاح الرجوع للخلف للمسح ،وهروب  للخروج من التحرير.) ثم اختر واحد أو "
+"أكثر من التخطيطات في العمود الأيمن.\n"
+"\n"
+"سيعمل هذا فقط إذا كنت تستخدم ميتستي أو برنامجا آخر يقرأ الاعدادات"
+
+#: screenlayout/widget.py:61
+msgid ""
+"Your configuration does not include an active monitor. Do you want to apply "
+"the configuration?"
+msgstr "إعداداتك لا تحتوي على شاشة نشطة . هل تريد تنشيط الاعدادات؟"
+
+#: screenlayout/widget.py:327
+msgid "Active"
+msgstr "نشط"
+
+#: screenlayout/widget.py:335
+msgid "Primary"
+msgstr "رئيسي"
+
+#: screenlayout/widget.py:349
+#, python-format
+msgid "Setting this resolution is not possible here: %s"
+msgstr "لا يمكن إعداد هذه الدقة هنا : %s"
+
+#: screenlayout/widget.py:362
+#, python-format
+msgid "This orientation is not possible here: %s"
+msgstr "هذه الاتجاهات غير متاحة هنا : %s"
+
+#: screenlayout/widget.py:368
+msgid "Resolution"
+msgstr "دقة الشاشة"
+
+#: screenlayout/widget.py:370
+msgid "Orientation"
+msgstr "إتجاه"
+
+#: screenlayout/xrandr.py:275
+msgid "A part of an output is outside the virtual screen."
+msgstr "جزء من الناتج خارج الشاشة الإفتراضية."
+
+#: screenlayout/xrandr.py:278
+msgid "An output is outside the virtual screen."
+msgstr "الناتج خارج الشاشة الإفتراضية"

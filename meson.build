@@ -13,3 +13,4 @@ add_project_arguments('-DPACKAGE_DATA_DIR="' + resource_dir + '"', language : [ 
 
 subdir('src')
 subdir('data')
+subdir('po')
