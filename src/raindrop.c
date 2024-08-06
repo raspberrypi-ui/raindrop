@@ -660,7 +660,7 @@ static void load_labwc_config (void)
     int mon, w, h, i;
     float f;
 
-    char *loc = setlocale (LC_NUMERIC, "");
+    char *loc = g_strdup (setlocale (LC_NUMERIC, ""));
     setlocale (LC_NUMERIC, "C");
 
     clear_config (FALSE);
@@ -739,6 +739,7 @@ static void load_labwc_config (void)
     copy_config (mons, bmons);
 
     setlocale (LC_NUMERIC, loc);
+    g_free (loc);
 }
 
 static void load_openbox_config (void)
@@ -883,7 +884,7 @@ static int write_config (FILE *fp)
 {
     int m, nmons = 0;
 
-    char *loc = setlocale (LC_NUMERIC, "");
+    char *loc = g_strdup (setlocale (LC_NUMERIC, ""));
     setlocale (LC_NUMERIC, "C");
 
     fprintf (fp, "profile {\n");
@@ -911,6 +912,7 @@ static int write_config (FILE *fp)
     fprintf (fp, "}\n\n");
 
     setlocale (LC_NUMERIC, loc);
+    g_free (loc);
 
     return nmons;
 }
@@ -1183,7 +1185,7 @@ static void load_openbox_touchscreens (void)
     char *cmd;
     float matrix[6];
 
-    char *loc = setlocale (LC_NUMERIC, "");
+    char *loc = g_strdup (setlocale (LC_NUMERIC, ""));
     setlocale (LC_NUMERIC, "C");
 
     // get the screen size
@@ -1243,6 +1245,7 @@ static void load_openbox_touchscreens (void)
     }
 
     setlocale (LC_NUMERIC, loc);
+    g_free (loc);
 }
 
 static void write_touchscreens (char *filename)
