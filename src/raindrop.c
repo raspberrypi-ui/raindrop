@@ -25,6 +25,10 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ============================================================================*/
 
+/* TODO
+ * X - primary display?
+ */
+
 #include <locale.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
@@ -38,6 +42,7 @@ typedef struct {
     int width;
     int height;
     float freq;
+    gboolean interlaced;
 } output_mode_t;
 
 typedef struct {
@@ -49,6 +54,7 @@ typedef struct {
     int y;
     int rotation;
     float freq;
+    gboolean interlaced;
     GList *modes;
     char *touchscreen;
     char *backlight;
@@ -107,7 +113,7 @@ static void update_openbox_system_config (void);
 static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
 static void check_frequency (int mon);
 static void set_resolution (GtkMenuItem *item, gpointer data);
-static void add_resolution (GtkWidget *menu, long mon, int width, int height);
+static void add_resolution (GtkWidget *menu, long mon, int width, int height, gboolean inter);
 static void set_frequency (GtkMenuItem *item, gpointer data);
 static void add_frequency (GtkWidget *menu, long mon, float freq);
 static void set_orientation (GtkMenuItem *item, gpointer data);
@@ -117,7 +123,7 @@ static void set_touchscreen (GtkMenuItem *item, gpointer data);
 static void set_brightness (GtkMenuItem *item, gpointer data);
 static GtkWidget *create_menu (long mon);
 static GtkWidget *create_popup (void);
-static void add_mode (int monitor, int w, int h, float f);
+static void add_mode (int monitor, int w, int h, float f, gboolean i);
 static void load_labwc_config (void);
 static void load_openbox_config (void);
 static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
@@ -184,6 +190,7 @@ static void copy_config (monitor_t *from, monitor_t *to)
         to[m].y = from[m].y;
         to[m].rotation = from[m].rotation;
         to[m].freq = from[m].freq;
+        to[m].interlaced = from[m].interlaced;
         if (to[m].touchscreen) g_free (to[m].touchscreen);
         if (from[m].touchscreen) to[m].touchscreen = g_strdup (from[m].touchscreen);
     }
@@ -202,6 +209,7 @@ static gboolean compare_config (monitor_t *from, monitor_t *to)
         if (to[m].y != from[m].y) return FALSE;
         if (to[m].rotation != from[m].rotation) return FALSE;
         if (to[m].freq != from[m].freq) return FALSE;
+        if (to[m].interlaced != from[m].interlaced) return FALSE;
         if (g_strcmp0 (to[m].touchscreen, from[m].touchscreen)) return FALSE;
     }
     return TRUE;
@@ -218,6 +226,7 @@ static void clear_config (gboolean first)
         mons[m].y = 0;
         mons[m].freq = 0.0;
         mons[m].rotation = 0;
+        mons[m].interlaced = FALSE;
         mons[m].modes = NULL;
         mons[m].enabled = FALSE;
         mons[m].touchscreen = NULL;
@@ -240,8 +249,9 @@ static gint mode_compare (gconstpointer a, gconstpointer b)
 
     if (moda->width > modb->width) return -1;
     if (moda->width < modb->width) return 1;
-    if (moda->height > modb->height) return-1;
+    if (moda->height > modb->height) return -1;
     if (moda->height < modb->height) return 1;
+    if (moda->interlaced != modb->interlaced) return moda->interlaced ? 1 : -1;
     if (moda->freq > modb->freq) return -1;
     if (moda->freq < modb->freq) return 1;
     return 0;
@@ -362,24 +372,28 @@ static void check_frequency (int mon)
 static void set_resolution (GtkMenuItem *item, gpointer data)
 {
     int w, h;
+    gboolean i;
     int mon = (long) data;
 
     sscanf (gtk_menu_item_get_label (item), "%dx%d", &w, &h);
-    if (w != mons[mon].width || h != mons[mon].height)
+    if (strstr (gtk_menu_item_get_label (item), "i")) i = TRUE;
+    else i = FALSE;
+    if (w != mons[mon].width || h != mons[mon].height || i != mons[mon].interlaced)
     {
         mons[mon].width = w;
         mons[mon].height = h;
+        mons[mon].interlaced = i;
         check_frequency (mon);
     }
     gtk_widget_queue_draw (da);
 }
 
-static void add_resolution (GtkWidget *menu, long mon, int width, int height)
+static void add_resolution (GtkWidget *menu, long mon, int width, int height, gboolean inter)
 {
-    char *label = g_strdup_printf ("%dx%d", width, height);
+    char *label = g_strdup_printf ("%dx%d%s", width, height, inter ? "i" : "");
     GtkWidget *item = gtk_check_menu_item_new_with_label (label);
     g_free (label);
-    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].width == width && mons[mon].height == height);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].width == width && mons[mon].height == height && mons[mon].interlaced == inter);
     g_signal_connect (item, "activate", G_CALLBACK (set_resolution), (gpointer) mon);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
@@ -463,7 +477,7 @@ static GtkWidget *create_menu (long mon)
     int lastw, lasth, level;
     float lastf;
     output_mode_t *mode;
-    gboolean show_f = FALSE;
+    gboolean lasti, show_f = FALSE;
     char *ts;
 
     menu = gtk_menu_new ();
@@ -486,17 +500,19 @@ static GtkWidget *create_menu (long mon)
     lastw = 0;
     lasth = 0;
     lastf = 0.0;
+    lasti = FALSE;
     model = mons[mon].modes;
     while (model)
     {
         mode = (output_mode_t *) model->data;
-        if (lastw != mode->width || lasth != mode->height)
+        if (lastw != mode->width || lasth != mode->height || lasti != mode->interlaced)
         {
-            add_resolution (rmenu, mon, mode->width, mode->height);
+            add_resolution (rmenu, mon, mode->width, mode->height, mode->interlaced);
             lastw = mode->width;
             lasth = mode->height;
+            lasti = mode->interlaced;
         }
-        if (mode->width == mons[mon].width && mode->height == mons[mon].height && lastf != mode->freq && mode->freq > 1.0)
+        if (mode->width == mons[mon].width && mode->height == mons[mon].height && mode->interlaced == mons[mon].interlaced && lastf != mode->freq && mode->freq > 1.0)
         {
             add_frequency (fmenu, mon, mode->freq);
             lastf = mode->freq;
@@ -603,13 +619,14 @@ static GtkWidget *create_popup (void)
 /* Loading initial config */
 /*----------------------------------------------------------------------------*/
 
-static void add_mode (int monitor, int w, int h, float f)
+static void add_mode (int monitor, int w, int h, float f, gboolean i)
 {
     output_mode_t *mod;
     mod = g_new0 (output_mode_t, 1);
     mod->width = w;
     mod->height = h;
     mod->freq = f;
+    mod->interlaced = i;
     mons[monitor].modes = g_list_append (mons[monitor].modes, mod);
 }
 
@@ -645,18 +662,18 @@ static void load_labwc_config (void)
                 if (strstr (line, "NOOP"))
                 {
                     // add virtual modes for VNC display
-                    add_mode (mon, 640, 480, 0);
-                    add_mode (mon, 720, 480, 0);
-                    add_mode (mon, 800, 600, 0);
-                    add_mode (mon, 1024, 768, 0);
-                    add_mode (mon, 1280, 720, 0);
-                    add_mode (mon, 1280, 1024, 0);
-                    add_mode (mon, 1600, 1200, 0);
-                    add_mode (mon, 1920, 1080, 0);
-                    add_mode (mon, 2048, 1080, 0);
-                    add_mode (mon, 2560, 1440, 0);
-                    add_mode (mon, 3200, 1800, 0);
-                    add_mode (mon, 3840, 2160, 0);
+                    add_mode (mon, 640, 480, 0, FALSE);
+                    add_mode (mon, 720, 480, 0, FALSE);
+                    add_mode (mon, 800, 600, 0, FALSE);
+                    add_mode (mon, 1024, 768, 0, FALSE);
+                    add_mode (mon, 1280, 720, 0, FALSE);
+                    add_mode (mon, 1280, 1024, 0, FALSE);
+                    add_mode (mon, 1600, 1200, 0, FALSE);
+                    add_mode (mon, 1920, 1080, 0, FALSE);
+                    add_mode (mon, 2048, 1080, 0, FALSE);
+                    add_mode (mon, 2560, 1440, 0, FALSE);
+                    add_mode (mon, 3200, 1800, 0, FALSE);
+                    add_mode (mon, 3840, 2160, 0, FALSE);
                 }
             }
             else if (line[2] != ' ')
@@ -681,7 +698,7 @@ static void load_labwc_config (void)
             else if (line[4] != ' ')
             {
                 sscanf (line, "    %dx%d px, %f Hz", &w, &h, &f);
-                add_mode (mon, w, h, f);
+                add_mode (mon, w, h, f, FALSE);
                 if ((mons[mon].enabled && strstr (line, "current"))
                     || (! mons[mon].enabled && strstr (line, "preferred")))
                 {
@@ -708,6 +725,7 @@ static void load_openbox_config (void)
     char *line, *cptr;
     size_t len;
     int mon, w, h, i;
+    gboolean inter;
     float f;
 
     clear_config (FALSE);
@@ -751,18 +769,28 @@ static void load_openbox_config (void)
                 cptr = strtok (line, " ");
                 while (cptr)
                 {
-                    if (strstr (cptr, "x")) sscanf (cptr, "%dx%d", &w, &h);
+                    if (strstr (cptr, "x"))
+                    {
+                        sscanf (cptr, "%dx%d", &w, &h);
+                        if (strstr (cptr, "i")) inter = TRUE;
+                        else inter = FALSE;
+                    }
                     if (strstr (cptr, "."))
                     {
                         sscanf (cptr, "%f", &f);
-                        add_mode (mon, w, h, f);
+                        add_mode (mon, w, h, f, inter);
                     }
-                    if (mons[mon].enabled && strstr (cptr, "*")) mons[mon].freq = f;
-                    if (!mons[mon].enabled && *cptr == '+')
+                    if (mons[mon].enabled && strstr (cptr, "*"))
+                    {
+                        mons[mon].freq = f;
+                        mons[mon].interlaced = inter;
+                    }
+                    if (!mons[mon].enabled && strstr (cptr, "+"))
                     {
                         mons[mon].width = w;
                         mons[mon].height = h;
                         mons[mon].freq = f;
+                        mons[mon].interlaced = inter;
                     }
                     cptr = strtok (NULL, " ");
                 }
@@ -904,8 +932,8 @@ static void write_dispsetup (const char *infile)
     {
         if (mons[m].modes == NULL) continue;
         if (mons[m].enabled)
-            mstr = g_strdup_printf ("--output %s --mode %dx%d --rate %0.3f --pos %dx%d --rotate %s", mons[m].name,
-                mons[m].width, mons[m].height, mons[m].freq, mons[m].x, mons[m].y, xorients[mons[m].rotation / 90]);
+            mstr = g_strdup_printf ("--output %s --mode %dx%d%s --rate %0.3f --pos %dx%d --rotate %s", mons[m].name,
+                mons[m].width, mons[m].height, mons[m].interlaced ? "i" : "", mons[m].freq, mons[m].x, mons[m].y, xorients[mons[m].rotation / 90]);
         else
             mstr = g_strdup_printf ("--output %s --off", mons[m].name);
         tmp = g_strdup_printf ("%s %s", cmd, mstr);
