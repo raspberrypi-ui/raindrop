@@ -449,7 +449,7 @@ static void set_touchscreen (GtkMenuItem *item, gpointer data)
     for (m = 0; m < MAX_MONS; m++)
     {
         if (mons[m].modes == NULL) continue;
-        if (m == mon) mons[m].touchscreen = g_strdup_printf (ts);
+        if (m == mon) mons[m].touchscreen = g_strdup (ts);
         else if (!g_strcmp0 (mons[m].touchscreen, ts))
         {
             g_free (mons[m].touchscreen);
@@ -790,6 +790,7 @@ static void load_openbox_config (void)
             }
             else if (line[4] != ' ')
             {
+                inter = FALSE;
                 cptr = strtok (line, " ");
                 while (cptr)
                 {
@@ -797,7 +798,6 @@ static void load_openbox_config (void)
                     {
                         sscanf (cptr, "%dx%d", &w, &h);
                         if (strstr (cptr, "i")) inter = TRUE;
-                        else inter = FALSE;
                     }
                     if (strstr (cptr, "."))
                     {
