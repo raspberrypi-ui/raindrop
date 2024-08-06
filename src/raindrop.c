@@ -25,10 +25,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ============================================================================*/
 
-/* TODO
- * X - primary display?
- */
-
 #include <locale.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
@@ -58,6 +54,7 @@ typedef struct {
     GList *modes;
     char *touchscreen;
     char *backlight;
+    gboolean primary;
 } monitor_t;
 
 #define MAX_MONS 10
@@ -121,6 +118,7 @@ static void add_orientation (GtkWidget *menu, long mon, const char *orient, int 
 static void set_enable (GtkCheckMenuItem *item, gpointer data);
 static void set_touchscreen (GtkMenuItem *item, gpointer data);
 static void set_brightness (GtkMenuItem *item, gpointer data);
+static void set_primary (GtkCheckMenuItem *item, gpointer data);
 static GtkWidget *create_menu (long mon);
 static GtkWidget *create_popup (void);
 static void add_mode (int monitor, int w, int h, float f, gboolean i);
@@ -191,6 +189,7 @@ static void copy_config (monitor_t *from, monitor_t *to)
         to[m].rotation = from[m].rotation;
         to[m].freq = from[m].freq;
         to[m].interlaced = from[m].interlaced;
+        to[m].primary = from[m].primary;
         if (to[m].touchscreen) g_free (to[m].touchscreen);
         if (from[m].touchscreen) to[m].touchscreen = g_strdup (from[m].touchscreen);
     }
@@ -210,6 +209,7 @@ static gboolean compare_config (monitor_t *from, monitor_t *to)
         if (to[m].rotation != from[m].rotation) return FALSE;
         if (to[m].freq != from[m].freq) return FALSE;
         if (to[m].interlaced != from[m].interlaced) return FALSE;
+        if (to[m].primary != from[m].primary) return FALSE;
         if (g_strcmp0 (to[m].touchscreen, from[m].touchscreen)) return FALSE;
     }
     return TRUE;
@@ -239,6 +239,7 @@ static void clear_config (gboolean first)
         mons[m].name = NULL;
         mons[m].touchscreen = NULL;
         mons[m].backlight = NULL;
+        mons[m].primary = FALSE;
     }
 }
 
@@ -466,6 +467,19 @@ static void set_brightness (GtkMenuItem *item, gpointer data)
     set_backlight (mon, val);
 }
 
+static void set_primary (GtkCheckMenuItem *item, gpointer data)
+{
+    int mon = (long) data;
+    int m;
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].modes == NULL) continue;
+        if (m == mon) mons[m].primary = TRUE;
+        else mons[m].primary = FALSE;
+    }
+}
+
 /*----------------------------------------------------------------------------*/
 /* Context menu */
 /*----------------------------------------------------------------------------*/
@@ -491,6 +505,14 @@ static GtkWidget *create_menu (long mon)
     {
         gtk_widget_show_all (menu);
         return menu;
+    }
+
+    if (use_x)
+    {
+        item = gtk_check_menu_item_new_with_label (_("Primary"));
+        gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].primary);
+        g_signal_connect (item, "activate", G_CALLBACK (set_primary), (gpointer) mon);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     }
 
     // resolution and frequency menus from mode data for this monitor
@@ -744,6 +766,7 @@ static void load_openbox_config (void)
                 if (strstr (line, "Screen")) continue;
                 if (!strstr (line, " connected")) continue;
                 mon++;
+                if (strstr (line, "primary")) mons[mon].primary = TRUE;
                 cptr = strtok (line, " ");
                 mons[mon].name = g_strdup (cptr);
                 while (cptr[0] != '(')
@@ -932,7 +955,7 @@ static void write_dispsetup (const char *infile)
     {
         if (mons[m].modes == NULL) continue;
         if (mons[m].enabled)
-            mstr = g_strdup_printf ("--output %s --mode %dx%d%s --rate %0.3f --pos %dx%d --rotate %s", mons[m].name,
+            mstr = g_strdup_printf ("--output %s%s --mode %dx%d%s --rate %0.3f --pos %dx%d --rotate %s", mons[m].name, mons[m].primary ? " --primary" : "",
                 mons[m].width, mons[m].height, mons[m].interlaced ? "i" : "", mons[m].freq, mons[m].x, mons[m].y, xorients[mons[m].rotation / 90]);
         else
             mstr = g_strdup_printf ("--output %s --off", mons[m].name);
