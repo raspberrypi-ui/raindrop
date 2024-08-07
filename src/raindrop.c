@@ -56,7 +56,7 @@ int tid;
 GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb;
 GList *touchscreens;
 gboolean use_x;
-wm_functions_t touse;
+wm_functions_t wm_fn;
 
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
@@ -800,7 +800,7 @@ static void button_release_event (GtkWidget *, GdkEventButton, gpointer)
 
 static void handle_close (GtkButton *, gpointer)
 {
-    if (gtk_widget_get_sensitive (undo)) touse.update_system_config ();
+    if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
     gtk_main_quit ();
 }
 
@@ -808,21 +808,21 @@ static void handle_apply (GtkButton *, gpointer)
 {
     if (compare_config (mons, bmons)) return;
 
-    touse.save_config ();
-    touse.save_touchscreens ();
+    wm_fn.save_config ();
+    wm_fn.save_touchscreens ();
 
-    touse.reload_config ();
-    touse.reload_touchscreens ();
+    wm_fn.reload_config ();
+    wm_fn.reload_touchscreens ();
 
     clear_config (FALSE);
 
-    touse.load_config ();
+    wm_fn.load_config ();
 
     find_backlights ();
     sort_modes ();
     copy_config (mons, bmons);
 
-    touse.load_touchscreens ();
+    wm_fn.load_touchscreens ();
 
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, TRUE);
@@ -831,21 +831,21 @@ static void handle_apply (GtkButton *, gpointer)
 
 static void handle_undo (GtkButton *, gpointer)
 {
-    touse.revert_config ();
-    touse.revert_touchscreens ();
+    wm_fn.revert_config ();
+    wm_fn.revert_touchscreens ();
 
-    touse.reload_config ();
-    touse.reload_touchscreens ();
+    wm_fn.reload_config ();
+    wm_fn.reload_touchscreens ();
 
     clear_config (FALSE);
 
-    touse.load_config ();
+    wm_fn.load_config ();
 
     find_backlights ();
     sort_modes ();
     copy_config (mons, bmons);
 
-    touse.load_touchscreens ();
+    wm_fn.load_touchscreens ();
 
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, FALSE);
@@ -868,7 +868,7 @@ static void handle_menu (GtkButton *btn, gpointer)
 
 static void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
-    if (gtk_widget_get_sensitive (undo)) touse.update_system_config ();
+    if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
     gtk_main_quit ();
 }
 
@@ -888,28 +888,28 @@ int main (int argc, char *argv[])
     if (getenv ("WAYLAND_DISPLAY"))
     {
         use_x = FALSE;
-        touse = labwc_functions;
+        wm_fn = labwc_functions;
     }
     else
     {
         use_x = TRUE;
-        touse = openbox_functions;
+        wm_fn = openbox_functions;
     }
 
     clear_config (TRUE);
 
     find_touchscreens ();
 
-    touse.load_config ();
+    wm_fn.load_config ();
 
     find_backlights ();
     sort_modes ();
     copy_config (mons, bmons);
 
-    touse.load_touchscreens ();
+    wm_fn.load_touchscreens ();
 
     // ensure the config file reflects the current state, or undo won't work...
-    touse.save_config ();
+    wm_fn.save_config ();
 
     gtk_init (&argc, &argv);
 
