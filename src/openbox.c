@@ -40,7 +40,7 @@ const char *xorients[4] = { "normal", "left", "inverted", "right" };
 /*----------------------------------------------------------------------------*/
 
 void update_openbox_system_config (void);
-static void add_mode (int monitor, int w, int h, float f, gboolean i);
+static void add_mode_i (int monitor, int w, int h, float f, gboolean i);
 void load_openbox_config (void);
 static void write_dispsetup (const char *infile);
 void save_openbox_config (void);
@@ -65,7 +65,7 @@ void update_openbox_system_config (void)
 /* Loading initial config */
 /*----------------------------------------------------------------------------*/
 
-static void add_mode (int monitor, int w, int h, float f, gboolean i)
+static void add_mode_i (int monitor, int w, int h, float f, gboolean i)
 {
     output_mode_t *mod;
     mod = g_new0 (output_mode_t, 1);
@@ -84,6 +84,9 @@ void load_openbox_config (void)
     int mon, w, h, i;
     gboolean inter;
     float f;
+
+    char *loc = g_strdup (setlocale (LC_NUMERIC, ""));
+    setlocale (LC_NUMERIC, "C");
 
     mon = -1;
 
@@ -134,7 +137,7 @@ void load_openbox_config (void)
                     if (strstr (cptr, "."))
                     {
                         sscanf (cptr, "%f", &f);
-                        add_mode (mon, w, h, f, inter);
+                        add_mode_i (mon, w, h, f, inter);
                     }
                     if (mons[mon].enabled && strstr (cptr, "*"))
                     {
@@ -155,6 +158,9 @@ void load_openbox_config (void)
         free (line);
         pclose (fp);
     }
+
+    setlocale (LC_NUMERIC, loc);
+    g_free (loc);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -166,6 +172,9 @@ static void write_dispsetup (const char *infile)
     char *cmd, *mstr, *tmp;
     int m;
     FILE *fp;
+
+    char *loc = g_strdup (setlocale (LC_NUMERIC, ""));
+    setlocale (LC_NUMERIC, "C");
 
     cmd = g_strdup ("xrandr");
     for (m = 0; m < MAX_MONS; m++)
@@ -197,6 +206,9 @@ static void write_dispsetup (const char *infile)
 
     fprintf (fp, "if [ -e /usr/share/ovscsetup.sh ] ; then\n\t/usr/share/ovscsetup.sh\nfi\nexit 0");
     fclose (fp);
+
+    setlocale (LC_NUMERIC, loc);
+    g_free (loc);
 }
 
 void save_openbox_config (void)
