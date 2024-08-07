@@ -57,6 +57,18 @@ typedef struct {
     gboolean primary;
 } monitor_t;
 
+typedef struct {
+    void (*load_config) (void);
+    void (*load_touchscreens) (void);
+    void (*save_config) (void);
+    void (*save_touchscreens) (void);
+    void (*reload_config) (void);
+    void (*reload_touchscreens) (void);
+    void (*revert_config) (void);
+    void (*revert_touchscreens) (void);
+    void (*update_system_config) (void);
+} wm_functions_t;
+
 #define MAX_MONS 10
 
 #define SNAP_DISTANCE 200
@@ -65,16 +77,6 @@ typedef struct {
 #define UPSCALE(n) ((n) * scale)
 
 #define SUDO_PREFIX "env SUDO_ASKPASS=/usr/share/raindrop/pwdraindrop.sh sudo -A "
-
-#define load_config() {if (use_x) load_openbox_config (); else load_labwc_config ();}
-#define load_touchscreens() {if (use_x) load_openbox_touchscreens (); else load_labwc_touchscreens ();}
-#define save_config() {if (use_x) save_openbox_config (); else save_labwc_config ();}
-#define save_touchscreens() {if (!use_x) save_labwc_touchscreens ();}
-#define reload_config() {if (use_x) reload_openbox_config (); else reload_labwc_config ();}
-#define reload_touchscreens() {if (!use_x) reload_labwc_touchscreens ();}
-#define revert_config() {if (use_x) revert_openbox_config (); else revert_labwc_config ();}
-#define revert_touchscreens() {if (!use_x) revert_labwc_touchscreens ();}
-#define update_system_config() {if (use_x) update_openbox_system_config (); else update_labwc_system_config ();}
 
 /*----------------------------------------------------------------------------*/
 /* Global data */
@@ -93,6 +95,7 @@ int tid;
 GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb;
 GList *touchscreens;
 gboolean use_x;
+wm_functions_t touse;
 
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
@@ -158,6 +161,34 @@ static void handle_undo (GtkButton *, gpointer);
 static void handle_zoom (GtkButton *, gpointer data);
 static void handle_menu (GtkButton *btn, gpointer);
 static void end_program (GtkWidget *, GdkEvent *, gpointer);
+
+void empty (void) {};
+
+
+wm_functions_t labwc_functions = {
+    .load_config = load_labwc_config,
+    .load_touchscreens = load_labwc_touchscreens,
+    .save_config = save_labwc_config,
+    .save_touchscreens = save_labwc_touchscreens,
+    .reload_config = reload_labwc_config,
+    .reload_touchscreens = reload_labwc_touchscreens,
+    .revert_config = revert_labwc_config,
+    .revert_touchscreens = revert_labwc_touchscreens,
+    .update_system_config = update_labwc_system_config
+};
+
+wm_functions_t openbox_functions = {
+    .load_config = load_openbox_config,
+    .load_touchscreens = load_openbox_touchscreens,
+    .save_config = save_openbox_config,
+    .save_touchscreens = empty,
+    .reload_config = reload_openbox_config,
+    .reload_touchscreens = empty,
+    .revert_config = revert_openbox_config,
+    .revert_touchscreens = empty,
+    .update_system_config = update_openbox_system_config
+};
+
 
 /*----------------------------------------------------------------------------*/
 /* Helper functions */
@@ -1499,7 +1530,7 @@ static void button_release_event (GtkWidget *, GdkEventButton, gpointer)
 
 static void handle_close (GtkButton *, gpointer)
 {
-    if (gtk_widget_get_sensitive (undo)) update_system_config ();
+    if (gtk_widget_get_sensitive (undo)) touse.update_system_config ();
     gtk_main_quit ();
 }
 
@@ -1507,14 +1538,14 @@ static void handle_apply (GtkButton *, gpointer)
 {
     if (compare_config (mons, bmons)) return;
 
-    save_config ();
-    save_touchscreens ();
+    touse.save_config ();
+    touse.save_touchscreens ();
 
-    reload_config ();
-    reload_touchscreens ();
+    touse.reload_config ();
+    touse.reload_touchscreens ();
 
-    load_config ();
-    load_touchscreens ();
+    touse.load_config ();
+    touse.load_touchscreens ();
 
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, TRUE);
@@ -1523,14 +1554,14 @@ static void handle_apply (GtkButton *, gpointer)
 
 static void handle_undo (GtkButton *, gpointer)
 {
-    revert_config ();
-    revert_touchscreens ();
+    touse.revert_config ();
+    touse.revert_touchscreens ();
 
-    reload_config ();
-    reload_touchscreens ();
+    touse.reload_config ();
+    touse.reload_touchscreens ();
 
-    load_config ();
-    load_touchscreens ();
+    touse.load_config ();
+    touse.load_touchscreens ();
 
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, FALSE);
@@ -1553,7 +1584,7 @@ static void handle_menu (GtkButton *btn, gpointer)
 
 static void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
-    if (gtk_widget_get_sensitive (undo)) update_system_config ();
+    if (gtk_widget_get_sensitive (undo)) touse.update_system_config ();
     gtk_main_quit ();
 }
 
@@ -1570,18 +1601,26 @@ int main (int argc, char *argv[])
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
 
-    if (getenv ("WAYLAND_DISPLAY")) use_x = FALSE;
-    else use_x = TRUE;
+    if (getenv ("WAYLAND_DISPLAY"))
+    {
+        use_x = FALSE;
+        touse = labwc_functions;
+    }
+    else
+    {
+        use_x = TRUE;
+        touse = openbox_functions;
+    }
 
     clear_config (TRUE);
 
     find_touchscreens ();
 
-    load_config ();
-    load_touchscreens ();
+    touse.load_config ();
+    touse.load_touchscreens ();
 
     // ensure the config file reflects the current state, or undo won't work...
-    save_config ();
+    touse.save_config ();
 
     gtk_init (&argc, &argv);
 
