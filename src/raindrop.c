@@ -28,62 +28,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <locale.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
-#include <libxml/xpath.h>
+#include "raindrop.h"
+
+extern wm_functions_t labwc_functions;
+extern wm_functions_t openbox_functions;
 
 /*----------------------------------------------------------------------------*/
 /* Typedefs and macros */
 /*----------------------------------------------------------------------------*/
-
-typedef struct {
-    int width;
-    int height;
-    float freq;
-    gboolean interlaced;
-} output_mode_t;
-
-typedef struct {
-    char *name;
-    gboolean enabled;
-    int width;
-    int height;
-    int x;
-    int y;
-    int rotation;
-    float freq;
-    gboolean interlaced;
-    GList *modes;
-    char *touchscreen;
-    char *backlight;
-    gboolean primary;
-} monitor_t;
-
-typedef struct {
-    void (*load_config) (void);
-    void (*load_touchscreens) (void);
-    void (*save_config) (void);
-    void (*save_touchscreens) (void);
-    void (*reload_config) (void);
-    void (*reload_touchscreens) (void);
-    void (*revert_config) (void);
-    void (*revert_touchscreens) (void);
-    void (*update_system_config) (void);
-} wm_functions_t;
-
-#define MAX_MONS 10
 
 #define SNAP_DISTANCE 200
 
 #define SCALE(n) ((n) / scale)
 #define UPSCALE(n) ((n) * scale)
 
-#define SUDO_PREFIX "env SUDO_ASKPASS=/usr/share/raindrop/pwdraindrop.sh sudo -A "
-
 /*----------------------------------------------------------------------------*/
 /* Global data */
 /*----------------------------------------------------------------------------*/
-
-const char *orients[4] = { "normal", "90", "180", "270" };
-const char *xorients[4] = { "normal", "left", "inverted", "right" };
 
 monitor_t mons[MAX_MONS], bmons[MAX_MONS];
 int mousex, mousey;
@@ -108,8 +69,6 @@ static gboolean compare_config (monitor_t *from, monitor_t *to);
 static void clear_config (gboolean first);
 static gint mode_compare (gconstpointer a, gconstpointer b);
 static void sort_modes (void);
-static void update_labwc_system_config (void);
-static void update_openbox_system_config (void);
 static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
 static void check_frequency (int mon);
 static void set_resolution (GtkMenuItem *item, gpointer data);
@@ -124,31 +83,12 @@ static void set_brightness (GtkMenuItem *item, gpointer data);
 static void set_primary (GtkCheckMenuItem *item, gpointer data);
 static GtkWidget *create_menu (long mon);
 static GtkWidget *create_popup (void);
-static void add_mode (int monitor, int w, int h, float f, gboolean i);
-static void load_labwc_config (void);
-static void load_openbox_config (void);
-static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
-static int write_config (FILE *fp);
-static void merge_configs (const char *infile, const char *outfile);
-static void save_labwc_config (void);
-static void write_dispsetup (const char *infile);
-static void save_openbox_config (void);
-static void reload_labwc_config (void);
-static void reload_openbox_config (void);
-static void revert_labwc_config (void);
-static void revert_openbox_config (void);
 static void set_timer_msg (void);
 static void handle_cancel (GtkButton *, gpointer);
 static void handle_ok (GtkButton *, gpointer);
 static gboolean revert_timeout (gpointer data);
 static void show_confirm_dialog (void);
 static void find_touchscreens (void);
-static void load_labwc_touchscreens (void);
-static void load_openbox_touchscreens (void);
-static void write_touchscreens (char *filename);
-static void save_labwc_touchscreens (void);
-static void reload_labwc_touchscreens (void);
-static void revert_labwc_touchscreens (void);
 static void find_backlights (void);
 static int get_backlight (int mon);
 static void set_backlight (int mon, int level);
@@ -161,34 +101,6 @@ static void handle_undo (GtkButton *, gpointer);
 static void handle_zoom (GtkButton *, gpointer data);
 static void handle_menu (GtkButton *btn, gpointer);
 static void end_program (GtkWidget *, GdkEvent *, gpointer);
-
-void empty (void) {};
-
-
-wm_functions_t labwc_functions = {
-    .load_config = load_labwc_config,
-    .load_touchscreens = load_labwc_touchscreens,
-    .save_config = save_labwc_config,
-    .save_touchscreens = save_labwc_touchscreens,
-    .reload_config = reload_labwc_config,
-    .reload_touchscreens = reload_labwc_touchscreens,
-    .revert_config = revert_labwc_config,
-    .revert_touchscreens = revert_labwc_touchscreens,
-    .update_system_config = update_labwc_system_config
-};
-
-wm_functions_t openbox_functions = {
-    .load_config = load_openbox_config,
-    .load_touchscreens = load_openbox_touchscreens,
-    .save_config = save_openbox_config,
-    .save_touchscreens = empty,
-    .reload_config = reload_openbox_config,
-    .reload_touchscreens = empty,
-    .revert_config = revert_openbox_config,
-    .revert_touchscreens = empty,
-    .update_system_config = update_openbox_system_config
-};
-
 
 /*----------------------------------------------------------------------------*/
 /* Helper functions */
@@ -297,32 +209,6 @@ static void sort_modes (void)
         if (mons[m].modes == NULL) continue;
         mons[m].modes = g_list_sort (mons[m].modes, mode_compare);
     }
-}
-
-static void update_labwc_system_config (void)
-{
-    char *cmd;
-
-    system (SUDO_PREFIX "mkdir -p /usr/share/labwc/");
-
-    cmd = g_strdup_printf (SUDO_PREFIX "cp %s/kanshi/config /usr/share/labwc/config.kanshi",
-        g_get_user_config_dir ());
-    system (cmd);
-    g_free (cmd);
-
-    cmd = g_strdup_printf (SUDO_PREFIX "cp %s/labwc/rcgreeter.xml /usr/share/labwc/rc.xml",
-        g_get_user_config_dir ());
-    system (cmd);
-    g_free (cmd);
-}
-
-static void update_openbox_system_config (void)
-{
-    char *cmd;
-
-    cmd = g_strdup_printf (SUDO_PREFIX "cp /var/tmp/dispsetup.sh /usr/share/dispsetup.sh");
-    system (cmd);
-    g_free (cmd);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -669,399 +555,6 @@ static GtkWidget *create_popup (void)
 }
 
 /*----------------------------------------------------------------------------*/
-/* Loading initial config */
-/*----------------------------------------------------------------------------*/
-
-static void add_mode (int monitor, int w, int h, float f, gboolean i)
-{
-    output_mode_t *mod;
-    mod = g_new0 (output_mode_t, 1);
-    mod->width = w;
-    mod->height = h;
-    mod->freq = f;
-    mod->interlaced = i;
-    mons[monitor].modes = g_list_append (mons[monitor].modes, mod);
-}
-
-static void load_labwc_config (void)
-{
-    FILE *fp;
-    char *line, *cptr;
-    size_t len;
-    int mon, w, h, i;
-    float f;
-
-    char *loc = g_strdup (setlocale (LC_NUMERIC, ""));
-    setlocale (LC_NUMERIC, "C");
-
-    clear_config (FALSE);
-
-    mon = -1;
-
-    fp = popen ("wlr-randr", "r");
-    if (fp)
-    {
-        line = NULL;
-        len = 0;
-        while (getline (&line, &len, fp) != -1)
-        {
-            if (line[0] != ' ')
-            {
-                mon++;
-                cptr = line;
-                while (*cptr != ' ') cptr++;
-                *cptr = 0;
-                mons[mon].name = g_strdup (line);
-                if (strstr (line, "NOOP"))
-                {
-                    // add virtual modes for VNC display
-                    add_mode (mon, 640, 480, 0, FALSE);
-                    add_mode (mon, 720, 480, 0, FALSE);
-                    add_mode (mon, 800, 600, 0, FALSE);
-                    add_mode (mon, 1024, 768, 0, FALSE);
-                    add_mode (mon, 1280, 720, 0, FALSE);
-                    add_mode (mon, 1280, 1024, 0, FALSE);
-                    add_mode (mon, 1600, 1200, 0, FALSE);
-                    add_mode (mon, 1920, 1080, 0, FALSE);
-                    add_mode (mon, 2048, 1080, 0, FALSE);
-                    add_mode (mon, 2560, 1440, 0, FALSE);
-                    add_mode (mon, 3200, 1800, 0, FALSE);
-                    add_mode (mon, 3840, 2160, 0, FALSE);
-                }
-            }
-            else if (line[2] != ' ')
-            {
-                if (strstr (line, "Position"))
-                {
-                    sscanf (line, "  Position: %d,%d", &w, &h);
-                    mons[mon].x = w;
-                    mons[mon].y = h;
-                }
-                else if (strstr (line, "Transform"))
-                {
-                    for (i = 0; i < 4; i++)
-                        if (strstr (line, orients[i])) mons[mon].rotation = i * 90;
-                }
-                else if (strstr (line, "Enabled"))
-                {
-                    if (strstr (line, "no")) mons[mon].enabled = FALSE;
-                    else mons[mon].enabled = TRUE;
-                }
-            }
-            else if (line[4] != ' ')
-            {
-                sscanf (line, "    %dx%d px, %f Hz", &w, &h, &f);
-                add_mode (mon, w, h, f, FALSE);
-                if ((mons[mon].enabled && strstr (line, "current"))
-                    || (! mons[mon].enabled && strstr (line, "preferred")))
-                {
-                    mons[mon].width = w;
-                    mons[mon].height = h;
-                    mons[mon].freq = f;
-                }
-            }
-        }
-        free (line);
-        pclose (fp);
-    }
-
-    find_backlights ();
-    sort_modes ();
-    copy_config (mons, bmons);
-
-    setlocale (LC_NUMERIC, loc);
-    g_free (loc);
-}
-
-static void load_openbox_config (void)
-{
-    FILE *fp;
-    char *line, *cptr;
-    size_t len;
-    int mon, w, h, i;
-    gboolean inter;
-    float f;
-
-    clear_config (FALSE);
-
-    mon = -1;
-
-    fp = popen ("xrandr", "r");
-    if (fp)
-    {
-        line = NULL;
-        len = 0;
-        while (getline (&line, &len, fp) != -1)
-        {
-            if (line[0] != ' ')
-            {
-                if (strstr (line, "Screen")) continue;
-                if (!strstr (line, " connected")) continue;
-                mon++;
-                if (strstr (line, "primary")) mons[mon].primary = TRUE;
-                cptr = strtok (line, " ");
-                mons[mon].name = g_strdup (cptr);
-                while (cptr[0] != '(')
-                {
-                    if (cptr[0] >= '1' && cptr[0] <= '9')
-                    {
-                        sscanf (cptr, "%dx%d+%d+%d", &mons[mon].width, &mons[mon].height, &mons[mon].x, &mons[mon].y);
-                        mons[mon].enabled = TRUE;
-                    }
-                    for (i = 0; i < 4; i++)
-                        if (strstr (cptr, xorients[i])) mons[mon].rotation = i * 90;
-                    cptr = strtok (NULL, " ");
-                }
-                if (mons[mon].rotation == 90 || mons[mon].rotation == 270)
-                {
-                    i = mons[mon].width;
-                    mons[mon].width = mons[mon].height;
-                    mons[mon].height = i;
-                }
-            }
-            else if (line[4] != ' ')
-            {
-                inter = FALSE;
-                cptr = strtok (line, " ");
-                while (cptr)
-                {
-                    if (strstr (cptr, "x"))
-                    {
-                        sscanf (cptr, "%dx%d", &w, &h);
-                        if (strstr (cptr, "i")) inter = TRUE;
-                    }
-                    if (strstr (cptr, "."))
-                    {
-                        sscanf (cptr, "%f", &f);
-                        add_mode (mon, w, h, f, inter);
-                    }
-                    if (mons[mon].enabled && strstr (cptr, "*"))
-                    {
-                        mons[mon].freq = f;
-                        mons[mon].interlaced = inter;
-                    }
-                    if (!mons[mon].enabled && strstr (cptr, "+"))
-                    {
-                        mons[mon].width = w;
-                        mons[mon].height = h;
-                        mons[mon].freq = f;
-                        mons[mon].interlaced = inter;
-                    }
-                    cptr = strtok (NULL, " ");
-                }
-            }
-        }
-        free (line);
-        pclose (fp);
-    }
-
-    find_backlights ();
-    sort_modes ();
-    copy_config (mons, bmons);
-}
-
-/*----------------------------------------------------------------------------*/
-/* Writing config */
-/*----------------------------------------------------------------------------*/
-
-static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
-{
-    char *line;
-    size_t len;
-    gboolean valid = FALSE;
-    char *buf, *tmp;
-    int m;
-
-    line = NULL;
-    len = 0;
-    while (getline (&line, &len, fp) != -1)
-    {
-        if (strstr (line, "profile"))
-        {
-            valid = TRUE;
-            buf = g_strdup (line);
-        }
-        else if (valid)
-        {
-            if (strstr (line, "}"))
-            {
-                tmp = g_strdup_printf ("%s}\n", buf);
-                g_free (buf);
-                buf = tmp;
-
-                if (nmons) fprintf (foutp, "%s\n", buf);
-                g_free (buf);
-                return TRUE;
-            }
-            else if (strstr (line, "output"))
-            {
-                tmp = g_strdup_printf ("%s%s", buf, line);
-                g_free (buf);
-                buf = tmp;
-
-                for (m = 0; m < MAX_MONS; m++)
-                {
-                    if (mons[m].modes == NULL) continue;
-                    if (strstr (line, mons[m].name)) nmons--;
-                }
-            }
-        }
-    }
-    free (line);
-    return FALSE;
-}
-
-static int write_config (FILE *fp)
-{
-    int m, nmons = 0;
-
-    char *loc = g_strdup (setlocale (LC_NUMERIC, ""));
-    setlocale (LC_NUMERIC, "C");
-
-    fprintf (fp, "profile {\n");
-    for (m = 0; m < MAX_MONS; m++)
-    {
-        if (mons[m].modes == NULL) continue;
-        nmons++;
-        if (mons[m].enabled == FALSE)
-        {
-            fprintf (fp, "\t\toutput %s disable\n", mons[m].name);
-        }
-        else if (mons[m].freq == 0.0)
-        {
-            fprintf (fp, "\t\toutput %s enable mode --custom %dx%d position %d,%d transform %s\n",
-                mons[m].name, mons[m].width, mons[m].height,
-                mons[m].x, mons[m].y, orients[mons[m].rotation / 90]);
-        }
-        else
-        {
-            fprintf (fp, "\t\toutput %s enable mode %dx%d@%.3f position %d,%d transform %s\n",
-                mons[m].name, mons[m].width, mons[m].height, mons[m].freq,
-                mons[m].x, mons[m].y, orients[mons[m].rotation / 90]);
-        }
-    }
-    fprintf (fp, "}\n\n");
-
-    setlocale (LC_NUMERIC, loc);
-    g_free (loc);
-
-    return nmons;
-}
-
-static void merge_configs (const char *infile, const char *outfile)
-{
-    FILE *finp = fopen (infile, "r");
-    FILE *foutp = fopen (outfile, "w");
-
-    // write the profile for this config
-    int nmons = write_config (foutp);
-
-    // copy any other profiles
-    while (copy_profile (finp, foutp, nmons));
-
-    fclose (finp);
-    fclose (foutp);
-}
-
-static void save_labwc_config (void)
-{
-    char *infile, *outfile, *cmd;
-
-    infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
-    outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
-    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
-    system (cmd);
-    g_free (cmd);
-    merge_configs (infile, outfile);
-    g_free (infile);
-    g_free (outfile);
-}
-
-static void write_dispsetup (const char *infile)
-{
-    char *cmd, *mstr, *tmp;
-    int m;
-    FILE *fp;
-
-    cmd = g_strdup ("xrandr");
-    for (m = 0; m < MAX_MONS; m++)
-    {
-        if (mons[m].modes == NULL) continue;
-        if (mons[m].enabled)
-            mstr = g_strdup_printf ("--output %s%s --mode %dx%d%s --rate %0.3f --pos %dx%d --rotate %s", mons[m].name, mons[m].primary ? " --primary" : "",
-                mons[m].width, mons[m].height, mons[m].interlaced ? "i" : "", mons[m].freq, mons[m].x, mons[m].y, xorients[mons[m].rotation / 90]);
-        else
-            mstr = g_strdup_printf ("--output %s --off", mons[m].name);
-        tmp = g_strdup_printf ("%s %s", cmd, mstr);
-        g_free (cmd);
-        g_free (mstr);
-        cmd = tmp;
-    }
-
-    fp = fopen (infile, "wb");
-    fprintf (fp, "#!/bin/sh\nif %s --dryrun; then\n\t%s\nfi\n", cmd, cmd);
-    g_free (cmd);
-
-    for (m = 0; m < MAX_MONS; m++)
-    {
-        if (mons[m].modes == NULL) continue;
-        if (mons[m].touchscreen == NULL) continue;
-        cmd = g_strdup_printf ("xinput --map-to-output \"%s\" %s", mons[m].touchscreen, mons[m].name);
-        fprintf (fp, "if xinput | grep -q \"%s\" ; then\n\t%s\nfi\n", mons[m].touchscreen, cmd);
-        g_free (cmd);
-    }
-
-    fprintf (fp, "if [ -e /usr/share/ovscsetup.sh ] ; then\n\t/usr/share/ovscsetup.sh\nfi\nexit 0");
-    fclose (fp);
-}
-
-static void save_openbox_config (void)
-{
-    const char *infile = "/var/tmp/dispsetup.bak";
-    const char *outfile = "/var/tmp/dispsetup.sh";
-    char *cmd;
-
-    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
-    system (cmd);
-    g_free (cmd);
-    write_dispsetup (outfile);
-}
-
-static void reload_labwc_config (void)
-{
-    system ("pkill --signal SIGHUP kanshi");
-}
-
-static void reload_openbox_config (void)
-{
-    system ("/bin/bash /var/tmp/dispsetup.sh > /dev/null");
-}
-
-static void revert_labwc_config (void)
-{
-    char *infile, *outfile, *cmd;
-
-    infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
-    outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
-    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
-    system (cmd);
-    g_free (cmd);
-    g_free (infile);
-    g_free (outfile);
-}
-
-static void revert_openbox_config (void)
-{
-    const char *infile = "/var/tmp/dispsetup.bak";
-    const char *outfile = "/var/tmp/dispsetup.sh";
-    char *cmd;
-
-    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
-    system (cmd);
-    g_free (cmd);
-}
-
-/*----------------------------------------------------------------------------*/
 /* Confirmation / reversion */
 /*----------------------------------------------------------------------------*/
 
@@ -1146,229 +639,6 @@ static void find_touchscreens (void)
         free (line);
         pclose (fp);
     }
-}
-
-static void load_labwc_touchscreens (void)
-{
-    xmlDocPtr xDoc;
-    xmlNode *root_node, *child_node;
-    xmlAttr *attr;
-    char *infile, *dev, *mon;
-    int m;
-
-    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
-    if (!g_file_test (infile, G_FILE_TEST_IS_REGULAR))
-    {
-        g_free (infile);
-        return;
-    }
-
-    xmlInitParser ();
-    LIBXML_TEST_VERSION
-    xDoc = xmlParseFile (infile);
-    if (xDoc == NULL)
-    {
-        g_free (infile);
-        return;
-    }
-
-    root_node = xmlDocGetRootElement (xDoc);
-    for (child_node = root_node->children; child_node; child_node = child_node->next)
-    {
-        if (child_node->type != XML_ELEMENT_NODE) continue;
-        if (!g_strcmp0 ((char *) child_node->name, "touch"))
-        {
-            dev = NULL;
-            mon = NULL;
-            for (attr = child_node->properties; attr; attr = attr->next)
-            {
-                if (!g_strcmp0 ((char *) attr->name, "deviceName"))
-                    dev = g_strdup ((char *) attr->children->content);
-                if (!g_strcmp0 ((char *) attr->name, "mapToOutput"))
-                    mon = g_strdup ((char *) attr->children->content);
-            }
-            if (dev && mon)
-            {
-                for (m = 0; m < MAX_MONS; m++)
-                {
-                    if (mons[m].modes == NULL) continue;
-                    if (!g_strcmp0 (mons[m].name, mon))
-                    {
-                        mons[m].touchscreen = g_strdup (dev);
-                    }
-                }
-            }
-            g_free (dev);
-            g_free (mon);
-        }
-    }
-
-    xmlFreeDoc (xDoc);
-    xmlCleanupParser ();
-    g_free (infile);
-}
-
-static void load_openbox_touchscreens (void)
-{
-    FILE *fp;
-    GList *ts;
-    int sw, sh, tw, th, tx, ty, m;
-    char *cmd;
-    float matrix[6];
-
-    char *loc = g_strdup (setlocale (LC_NUMERIC, ""));
-    setlocale (LC_NUMERIC, "C");
-
-    // get the screen size
-    fp = popen ("xrandr | grep current  | cut -d \" \" -f 8,10", "r");
-    if (fp)
-    {
-        if (fscanf (fp, "%d %d,", &sw, &sh) != 2)
-        {
-            sw = -1;
-            sh = -1;
-        }
-        pclose (fp);
-    }
-    if (sw == -1 || sh == -1) return;
-
-    // get the coord transform matrix for each touch device and calculate coords of touch device
-    ts = touchscreens;
-    while (ts)
-    {
-        cmd = g_strdup_printf ("xinput --list-props \"%s\" | grep Coordinate | cut -d : -f 2", (char *) ts->data);
-        fp = popen (cmd, "r");
-        if (fp)
-        {
-            if (fscanf (fp, "%f, %f, %f, %f, %f, %f,", matrix, matrix + 1, matrix + 2, matrix + 3, matrix + 4, matrix + 5) == 6)
-            {
-                if (matrix[0] != 1.0 || matrix[1] != 0.0 || matrix[2] != 0.0 || matrix[3] != 0.0 || matrix[4] != 1.0 || matrix[5] != 0.0)
-                {
-                    tw = ((float) sw + 0.5) * (matrix[0] + matrix[1]);
-                    th = ((float) sh + 0.5) * (matrix[3] + matrix[4]);
-                    tx = ((float) sw + 0.5) * matrix[2];
-                    ty = ((float) sh + 0.5) * matrix[5];
-                    if (tw < 0) tx += tw;
-                    if (th < 0) ty += th;
-                    if (tw * th < 0)
-                    {
-                        m = tw;
-                        tw = th;
-                        th = m;
-                    }
-                    if (tw < 0) tw *= -1;
-                    if (th < 0) th *= -1;
-
-                    for (m = 0; m < MAX_MONS; m++)
-                    {
-                        if (mons[m].modes == NULL) continue;
-                        if (mons[m].width == tw && mons[m].height == th && mons[m].x == tx && mons[m].y == ty)
-                        {
-                            mons[m].touchscreen = g_strdup ((char *) ts->data);
-                        }
-                    }
-                }
-            }
-            pclose (fp);
-        }
-        g_free (cmd);
-        ts = ts->next;
-    }
-
-    setlocale (LC_NUMERIC, loc);
-    g_free (loc);
-}
-
-static void write_touchscreens (char *filename)
-{
-    xmlDocPtr xDoc;
-    xmlNode *root_node, *child_node, *next;
-    int m;
-
-    xmlInitParser ();
-    LIBXML_TEST_VERSION
-    if (g_file_test (filename, G_FILE_TEST_IS_REGULAR))
-    {
-        xDoc = xmlParseFile (filename);
-        if (!xDoc) xDoc = xmlNewDoc ((xmlChar *) "1.0");
-    }
-    else xDoc = xmlNewDoc ((xmlChar *) "1.0");
-
-    root_node = xmlDocGetRootElement (xDoc);
-    if (root_node == NULL)
-    {
-        root_node = xmlNewNode (NULL, (xmlChar *) "openbox_config");
-        xmlDocSetRootElement (xDoc, root_node);
-        xmlNewNs (root_node, (xmlChar *) "http://openbox.org/3.4/rc", NULL);
-    }
-
-    child_node = root_node->children;
-    while (child_node)
-    {
-        next = child_node->next;
-        if (child_node->type == XML_ELEMENT_NODE)
-        {
-            if (!g_strcmp0 ((char *) child_node->name, "touch"))
-            {
-                xmlUnlinkNode (child_node);
-                xmlFreeNode (child_node);
-            }
-        }
-        child_node = next;
-    }
-
-    for (m = 0; m < MAX_MONS; m++)
-    {
-        if (mons[m].modes == NULL) continue;
-        if (mons[m].touchscreen == NULL) continue;
-        child_node = xmlNewNode (NULL, (xmlChar *) "touch");
-        xmlSetProp (child_node, (xmlChar *) "deviceName", (xmlChar *) mons[m].touchscreen);
-        xmlSetProp (child_node, (xmlChar *) "mapToOutput", (xmlChar *) mons[m].name);
-        xmlAddChild (root_node, child_node);
-    }
-
-    xmlSaveFile (filename, xDoc);
-    xmlFreeDoc (xDoc);
-    xmlCleanupParser ();
-}
-
-static void save_labwc_touchscreens (void)
-{
-    char *infile, *outfile, *cmd;
-
-    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
-    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
-    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
-    system (cmd);
-    g_free (cmd);
-    write_touchscreens (outfile);
-    g_free (infile);
-    g_free (outfile);
-
-    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rcgreeter.xml", NULL);
-    cmd = g_strdup_printf ("cp /usr/share/labwc/rc.xml %s", outfile);
-    system (cmd);
-    g_free (cmd);
-    write_touchscreens (outfile);
-    g_free (outfile);
-}
-
-static void reload_labwc_touchscreens (void)
-{
-    system ("labwc --reconfigure");
-}
-
-static void revert_labwc_touchscreens (void)
-{
-    char *infile, *outfile, *cmd;
-
-    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
-    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
-    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
-    system (cmd);
-    g_free (cmd);
-    g_free (infile);
-    g_free (outfile);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1544,7 +814,14 @@ static void handle_apply (GtkButton *, gpointer)
     touse.reload_config ();
     touse.reload_touchscreens ();
 
+    clear_config (FALSE);
+
     touse.load_config ();
+
+    find_backlights ();
+    sort_modes ();
+    copy_config (mons, bmons);
+
     touse.load_touchscreens ();
 
     gtk_widget_queue_draw (da);
@@ -1560,7 +837,14 @@ static void handle_undo (GtkButton *, gpointer)
     touse.reload_config ();
     touse.reload_touchscreens ();
 
+    clear_config (FALSE);
+
     touse.load_config ();
+
+    find_backlights ();
+    sort_modes ();
+    copy_config (mons, bmons);
+
     touse.load_touchscreens ();
 
     gtk_widget_queue_draw (da);
@@ -1617,6 +901,11 @@ int main (int argc, char *argv[])
     find_touchscreens ();
 
     touse.load_config ();
+
+    find_backlights ();
+    sort_modes ();
+    copy_config (mons, bmons);
+
     touse.load_touchscreens ();
 
     // ensure the config file reflects the current state, or undo won't work...

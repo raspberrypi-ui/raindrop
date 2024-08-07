@@ -1,5 +1,7 @@
 sources = files (
-    'raindrop.c'
+    'raindrop.c',
+    'labwc.c',
+    'openbox.c'
 )
 
 add_global_arguments('-Wno-unused-result', language : 'c')
