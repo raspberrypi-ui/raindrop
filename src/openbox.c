@@ -199,7 +199,7 @@ static void write_dispsetup (const char *infile)
     {
         if (mons[m].modes == NULL) continue;
         if (mons[m].touchscreen == NULL) continue;
-        cmd = g_strdup_printf ("xinput --map-to-output \"%s\" %s", mons[m].touchscreen, mons[m].name);
+        cmd = g_strdup_printf ("xinput --map-to-output pointer:\"%s\" %s", mons[m].touchscreen, mons[m].name);
         fprintf (fp, "if xinput | grep -q \"%s\" ; then\n\t%s\nfi\n", mons[m].touchscreen, cmd);
         g_free (cmd);
     }
