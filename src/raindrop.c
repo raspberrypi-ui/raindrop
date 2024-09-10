@@ -92,9 +92,9 @@ static void find_touchscreens (void);
 static void find_backlights (void);
 static int get_backlight (int mon);
 static void set_backlight (int mon, int level);
-static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer);
-static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion ev, gpointer);
-static void button_release_event (GtkWidget *, GdkEventButton, gpointer);
+static void button_press_event (GtkWidget *, GdkEventButton *ev, gpointer);
+static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion *ev, gpointer);
+static void button_release_event (GtkWidget *, GdkEventButton *, gpointer);
 static void handle_close (GtkButton *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
 static void handle_undo (GtkButton *, gpointer);
@@ -737,7 +737,7 @@ static void set_backlight (int mon, int level)
 /* Event handlers */
 /*----------------------------------------------------------------------------*/
 
-static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
+static void button_press_event (GtkWidget *, GdkEventButton *ev, gpointer)
 {
     GtkWidget *menu;
     int m;
@@ -747,16 +747,16 @@ static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
     {
         if (mons[m].modes == NULL || mons[m].enabled == FALSE) continue;
 
-        if (ev.x > SCALE(mons[m].x) && ev.x < SCALE(mons[m].x + screen_w (mons[m]))
-            && ev.y > SCALE(mons[m].y) && ev.y < SCALE(mons[m].y + screen_h (mons[m])))
+        if (ev->x > SCALE(mons[m].x) && ev->x < SCALE(mons[m].x + screen_w (mons[m]))
+            && ev->y > SCALE(mons[m].y) && ev->y < SCALE(mons[m].y + screen_h (mons[m])))
         {
             curmon = m;
-            mousex = ev.x - SCALE(mons[m].x);
-            mousey = ev.y - SCALE(mons[m].y);
+            mousex = ev->x - SCALE(mons[m].x);
+            mousey = ev->y - SCALE(mons[m].y);
         }
     }
 
-    if (ev.button == 3)
+    if (ev->button == 3)
     {
         menu = create_menu (curmon);
         curmon = -1;
@@ -764,14 +764,14 @@ static void button_press_event (GtkWidget *, GdkEventButton ev, gpointer)
     }
 }
 
-static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion ev, gpointer)
+static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion *ev, gpointer)
 {
     int m, xs, ys;
 
     if (curmon != -1)
     {
-        mons[curmon].x = UPSCALE(ev.x - mousex);
-        mons[curmon].y = UPSCALE(ev.y - mousey);
+        mons[curmon].x = UPSCALE(ev->x - mousex);
+        mons[curmon].y = UPSCALE(ev->y - mousey);
 
         // constrain to screen
         if (mons[curmon].x < 0) mons[curmon].x = 0;
@@ -793,7 +793,7 @@ static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion ev, gpointer)
     return FALSE;
 }
 
-static void button_release_event (GtkWidget *, GdkEventButton, gpointer)
+static void button_release_event (GtkWidget *, GdkEventButton *, gpointer)
 {
     curmon = -1;
 }
