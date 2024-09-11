@@ -78,7 +78,6 @@ static void update_wayfire_ini (char *filename)
         g_key_file_remove_group (kf, grp, NULL);
         if (mons[m].enabled)
         {
-            printf ("%f\n", mons[m].freq);
             set = g_strdup_printf ("%dx%d@%d", mons[m].width, mons[m].height, (int)((mons[m].freq + 0.0005) * 1000.0));
             g_key_file_set_string (kf, grp, "mode", set);
             g_free (set);
