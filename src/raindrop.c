@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern wm_functions_t labwc_functions;
 extern wm_functions_t openbox_functions;
+extern wm_functions_t wayfire_functions;
 
 /*----------------------------------------------------------------------------*/
 /* Typedefs and macros */
@@ -887,8 +888,9 @@ int main (int argc, char *argv[])
 
     if (getenv ("WAYLAND_DISPLAY"))
     {
+        if (getenv ("WAYFIRE_CONFIG_FILE")) wm_fn = wayfire_functions;
+        else wm_fn = labwc_functions;
         use_x = FALSE;
-        wm_fn = labwc_functions;
     }
     else
     {
