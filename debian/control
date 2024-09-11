@@ -8,6 +8,6 @@ Homepage: http://raspberrypi.com/
 
 Package: raindrop
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libgtk-3-0 (>= 3.24), libxml2, 
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtk-3-0 (>= 3.24), libxml2, libinput-tools, wlr-randr
 Description: Screen configuration tool for Raspberry Pi Desktop
  GTK screen configuration tool for labwc and openbox environments.
