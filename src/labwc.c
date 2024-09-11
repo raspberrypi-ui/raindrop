@@ -49,6 +49,7 @@ static void merge_configs (const char *infile, const char *outfile);
 void save_labwc_config (void);
 void reload_labwc_config (void);
 void revert_labwc_config (void);
+static void read_touchscreen_xml (char *filename);
 void load_labwc_touchscreens (void);
 static void write_touchscreens (char *filename);
 void save_labwc_touchscreens (void);
@@ -318,63 +319,67 @@ void revert_labwc_config (void)
 /* Touchscreens */
 /*----------------------------------------------------------------------------*/
 
-void load_labwc_touchscreens (void)
+static void read_touchscreen_xml (char *filename)
 {
     xmlDocPtr xDoc;
     xmlNode *root_node, *child_node;
     xmlAttr *attr;
-    char *infile, *dev, *mon;
+    char *dev, *mon;
     int m;
 
-    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
-    if (!g_file_test (infile, G_FILE_TEST_IS_REGULAR))
-    {
-        g_free (infile);
-        return;
-    }
+    if (!g_file_test (filename, G_FILE_TEST_IS_REGULAR)) return;
 
     xmlInitParser ();
     LIBXML_TEST_VERSION
-    xDoc = xmlParseFile (infile);
-    if (xDoc == NULL)
-    {
-        g_free (infile);
-        return;
-    }
 
-    root_node = xmlDocGetRootElement (xDoc);
-    for (child_node = root_node->children; child_node; child_node = child_node->next)
+    xDoc = xmlParseFile (filename);
+    if (xDoc != NULL)
     {
-        if (child_node->type != XML_ELEMENT_NODE) continue;
-        if (!g_strcmp0 ((char *) child_node->name, "touch"))
+        root_node = xmlDocGetRootElement (xDoc);
+        for (child_node = root_node->children; child_node; child_node = child_node->next)
         {
-            dev = NULL;
-            mon = NULL;
-            for (attr = child_node->properties; attr; attr = attr->next)
+            if (child_node->type != XML_ELEMENT_NODE) continue;
+            if (!g_strcmp0 ((char *) child_node->name, "touch"))
             {
-                if (!g_strcmp0 ((char *) attr->name, "deviceName"))
-                    dev = g_strdup ((char *) attr->children->content);
-                if (!g_strcmp0 ((char *) attr->name, "mapToOutput"))
-                    mon = g_strdup ((char *) attr->children->content);
-            }
-            if (dev && mon)
-            {
-                for (m = 0; m < MAX_MONS; m++)
+                dev = NULL;
+                mon = NULL;
+                for (attr = child_node->properties; attr; attr = attr->next)
                 {
-                    if (mons[m].modes == NULL) continue;
-                    if (!g_strcmp0 (mons[m].name, mon))
+                    if (!g_strcmp0 ((char *) attr->name, "deviceName"))
+                        dev = g_strdup ((char *) attr->children->content);
+                    if (!g_strcmp0 ((char *) attr->name, "mapToOutput"))
+                        mon = g_strdup ((char *) attr->children->content);
+                }
+                if (dev && mon)
+                {
+                    for (m = 0; m < MAX_MONS; m++)
                     {
-                        mons[m].touchscreen = g_strdup (dev);
+                        if (mons[m].modes == NULL) continue;
+                        if (!g_strcmp0 (mons[m].name, mon))
+                        {
+                            mons[m].touchscreen = g_strdup (dev);
+                        }
                     }
                 }
+                g_free (dev);
+                g_free (mon);
             }
-            g_free (dev);
-            g_free (mon);
         }
+
+        xmlFreeDoc (xDoc);
     }
 
-    xmlFreeDoc (xDoc);
     xmlCleanupParser ();
+}
+
+void load_labwc_touchscreens (void)
+{
+    char *infile;
+
+    read_touchscreen_xml ("/etc/xdg/labwc/rc.xml");
+
+    infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+    read_touchscreen_xml (infile);
     g_free (infile);
 }
 
