@@ -64,7 +64,6 @@ void update_wayfire_system_config (void)
 static void update_wayfire_ini (char *filename)
 {
     GKeyFile *kf;
-    GError *err;
     char *grp, *set;
     int m;
 
@@ -109,6 +108,15 @@ void save_wayfire_config (void)
 
     infile = g_build_filename (g_get_user_config_dir (), "wayfire.bak", NULL);
     outfile = g_build_filename (g_get_user_config_dir (), "wayfire.ini", NULL);
+
+    cmd = g_strdup_printf ("test -f %s", outfile);
+    if (!system (cmd))
+    {
+        g_free (cmd);
+        cmd = g_strdup_printf ("cp /etc/wayfire/template.ini %s", outfile);
+        system (cmd);
+    }
+    g_free (cmd);
 
     cmd = g_strdup_printf ("cp %s %s", outfile, infile);
     system (cmd);
