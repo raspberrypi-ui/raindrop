@@ -110,7 +110,7 @@ void save_wayfire_config (void)
     outfile = g_build_filename (g_get_user_config_dir (), "wayfire.ini", NULL);
 
     cmd = g_strdup_printf ("test -f %s", outfile);
-    if (!system (cmd))
+    if (system (cmd))
     {
         g_free (cmd);
         cmd = g_strdup_printf ("cp /etc/wayfire/template.ini %s", outfile);
@@ -127,9 +127,9 @@ void save_wayfire_config (void)
     g_free (outfile);
 
     if (system ("test -f /usr/share/greeter.ini"))
-        system ("cp /usr/share/greeter.ini /tmp/greeter.ini");
-    else
         system ("cp /etc/wayfire/gtemplate.ini /tmp/greeter.ini");
+    else
+        system ("cp /usr/share/greeter.ini /tmp/greeter.ini");
 
     update_wayfire_ini ("/tmp/greeter.ini");
 }
