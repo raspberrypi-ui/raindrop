@@ -1,3 +1,9 @@
+raindrop (0.3) bookworm; urgency=medium
+
+  * Fix shadows on undecorated windows
+
+ -- Simon Long <simon@raspberrypi.com>  Thu, 12 Sep 2024 13:49:14 +0100
+
 raindrop (0.2) bookworm; urgency=medium
 
   * Add wayfire support
