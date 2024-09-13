@@ -1,3 +1,9 @@
+raindrop (0.4) bookworm; urgency=medium
+
+  * Fix crash when background is right-clicked
+
+ -- Simon Long <simon@raspberrypi.com>  Thu, 12 Sep 2024 15:16:46 +0100
+
 raindrop (0.3) bookworm; urgency=medium
 
   * Fix shadows on undecorated windows

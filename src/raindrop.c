@@ -608,7 +608,7 @@ static void show_confirm_dialog (void)
     cpb = (GtkWidget *) gtk_builder_get_object (builder, "modal_pb");
     g_signal_connect (gtk_builder_get_object (builder, "modal_ok"), "clicked", G_CALLBACK (handle_ok), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "modal_cancel"), "clicked", G_CALLBACK (handle_cancel), NULL);
-    gtk_widget_show_all (conf);
+    gtk_widget_show (conf);
     rev_time = 10;
     set_timer_msg ();
     tid = g_timeout_add (1000, (GSourceFunc) revert_timeout, NULL);
@@ -757,7 +757,7 @@ static void button_press_event (GtkWidget *, GdkEventButton *ev, gpointer)
         }
     }
 
-    if (ev->button == 3)
+    if (ev->button == 3 && curmon != -1)
     {
         menu = create_menu (curmon);
         curmon = -1;
