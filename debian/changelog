@@ -1,3 +1,9 @@
+raindrop (0.5) bookworm; urgency=medium
+
+  * Hide message headerbar
+
+ -- Simon Long <simon@raspberrypi.com>  Fri, 13 Sep 2024 12:07:04 +0100
+
 raindrop (0.4) bookworm; urgency=medium
 
   * Fix crash when background is right-clicked
