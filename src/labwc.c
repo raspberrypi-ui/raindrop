@@ -362,6 +362,7 @@ static void read_touchscreen_xml (char *filename)
                         {
                             if (!g_strcmp0 ((char *) model->data, dev)) exists = TRUE;
                             if (exists) break;
+                            model = model->next;
                         }
                     }
                     if (exists)
