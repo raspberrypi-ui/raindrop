@@ -326,6 +326,8 @@ static void read_touchscreen_xml (char *filename)
     xmlAttr *attr;
     char *dev, *mon;
     int m;
+    GList *model;
+    gboolean exists;
 
     if (!g_file_test (filename, G_FILE_TEST_IS_REGULAR)) return;
 
@@ -352,12 +354,25 @@ static void read_touchscreen_xml (char *filename)
                 }
                 if (dev && mon)
                 {
-                    for (m = 0; m < MAX_MONS; m++)
+                    exists = FALSE;
+                    if (touchscreens)
                     {
-                        if (mons[m].modes == NULL) continue;
-                        if (!g_strcmp0 (mons[m].name, mon))
+                        model = touchscreens;
+                        while (model)
                         {
-                            mons[m].touchscreen = g_strdup (dev);
+                            if (!g_strcmp0 ((char *) model->data, dev)) exists = TRUE;
+                            if (exists) break;
+                        }
+                    }
+                    if (exists)
+                    {
+                        for (m = 0; m < MAX_MONS; m++)
+                        {
+                            if (mons[m].modes == NULL) continue;
+                            if (!g_strcmp0 (mons[m].name, mon))
+                            {
+                                mons[m].touchscreen = g_strdup (dev);
+                            }
                         }
                     }
                 }
