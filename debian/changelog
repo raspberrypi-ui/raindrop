@@ -1,3 +1,9 @@
+raindrop (0.6) bookworm; urgency=medium
+
+  * Only associate connected touchscreens
+
+ -- Simon Long <simon@raspberrypi.com>  Tue, 17 Sep 2024 15:23:19 +0100
+
 raindrop (0.5) bookworm; urgency=medium
 
   * Hide message headerbar
