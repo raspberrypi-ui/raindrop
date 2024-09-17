@@ -355,15 +355,12 @@ static void read_touchscreen_xml (char *filename)
                 if (dev && mon)
                 {
                     exists = FALSE;
-                    if (touchscreens)
+                    model = touchscreens;
+                    while (model)
                     {
-                        model = touchscreens;
-                        while (model)
-                        {
-                            if (!g_strcmp0 ((char *) model->data, dev)) exists = TRUE;
-                            if (exists) break;
-                            model = model->next;
-                        }
+                        if (!g_strcmp0 ((char *) model->data, dev)) exists = TRUE;
+                        if (exists) break;
+                        model = model->next;
                     }
                     if (exists)
                     {
