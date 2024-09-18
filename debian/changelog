@@ -1,3 +1,9 @@
+raindrop (0.7) bookworm; urgency=medium
+
+  * Do not snap to inactive monitors
+
+ -- Simon Long <simon@raspberrypi.com>  Wed, 18 Sep 2024 15:24:35 +0100
+
 raindrop (0.6) bookworm; urgency=medium
 
   * Only associate connected touchscreens

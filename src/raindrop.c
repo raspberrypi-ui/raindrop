@@ -781,7 +781,7 @@ static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion *ev, gpointer
         // snap top and left to other windows bottom or right, or to 0,0
         for (m = 0; m < MAX_MONS; m++)
         {
-            if (mons[m].modes == NULL) continue;
+            if (mons[m].modes == NULL || mons[m].enabled == FALSE) continue;
 
             xs = m != curmon ? mons[m].x + screen_w (mons[m]) : 0;
             ys = m != curmon ? mons[m].y + screen_h (mons[m]) : 0;
