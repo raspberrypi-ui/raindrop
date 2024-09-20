@@ -1,3 +1,9 @@
+raindrop (0.8) bookworm; urgency=medium
+
+  * Add postinst
+
+ -- Simon Long <simon@raspberrypi.com>  Fri, 20 Sep 2024 12:04:05 +0100
+
 raindrop (0.7) bookworm; urgency=medium
 
   * Do not snap to inactive monitors

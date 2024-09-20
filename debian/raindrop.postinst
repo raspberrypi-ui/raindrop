@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "configure" ]; then
+  if [ -e /etc/lightdm/lightdm.conf ] ; then
+    sed -i /etc/lightdm/lightdm.conf -e "s|#\?display-setup-script=.*|display-setup-script=/usr/share/dispsetup.sh|"
+  fi
+  if [ ! -e /usr/share/dispsetup.sh ] ; then
+    echo "#!/bin/sh\nexit 0" > /usr/share/dispsetup.sh
+    chmod a+x /usr/share/dispsetup.sh
+  fi 
+fi
+
+#DEBHELPER#
+
+exit 0
