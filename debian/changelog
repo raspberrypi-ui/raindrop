@@ -1,3 +1,9 @@
+raindrop (0.9) bookworm; urgency=medium
+
+  * Set mouseEmulation parameter
+
+ -- Simon Long <simon@raspberrypi.com>  Sun, 20 Oct 2024 12:34:36 +0100
+
 raindrop (0.8) bookworm; urgency=medium
 
   * Add postinst

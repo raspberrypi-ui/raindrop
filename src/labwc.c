@@ -27,6 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <locale.h>
 #include <gtk/gtk.h>
+#include <glib/gstdio.h>
 #include <libxml/xpath.h>
 #include "raindrop.h"
 
@@ -283,6 +284,10 @@ void save_labwc_config (void)
 {
     char *infile, *outfile, *cmd;
 
+    char *dir = g_build_filename (g_get_user_config_dir (), "kanshi/", NULL);
+    g_mkdir_with_parents (dir, S_IRUSR | S_IWUSR | S_IXUSR);
+    g_free (dir);
+
     infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
     outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
     cmd = g_strdup_printf ("cp %s %s", outfile, infile);
@@ -444,6 +449,7 @@ static void write_touchscreens (char *filename)
         child_node = xmlNewNode (NULL, (xmlChar *) "touch");
         xmlSetProp (child_node, (xmlChar *) "deviceName", (xmlChar *) mons[m].touchscreen);
         xmlSetProp (child_node, (xmlChar *) "mapToOutput", (xmlChar *) mons[m].name);
+        xmlSetProp (child_node, (xmlChar *) "mouseEmulation", (xmlChar *) "yes");
         xmlAddChild (root_node, child_node);
     }
 
@@ -455,6 +461,10 @@ static void write_touchscreens (char *filename)
 void save_labwc_touchscreens (void)
 {
     char *infile, *outfile, *cmd;
+
+    char *dir = g_build_filename (g_get_user_config_dir (), "labwc/", NULL);
+    g_mkdir_with_parents (dir, S_IRUSR | S_IWUSR | S_IXUSR);
+    g_free (dir);
 
     infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
     outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
