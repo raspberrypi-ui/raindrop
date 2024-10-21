@@ -58,6 +58,9 @@ GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb;
 GList *touchscreens;
 gboolean use_x;
 wm_functions_t wm_fn;
+gboolean pressed = FALSE;
+double press_x;
+double press_y;
 
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
@@ -96,6 +99,8 @@ static void set_backlight (int mon, int level);
 static void button_press_event (GtkWidget *, GdkEventButton *ev, gpointer);
 static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion *ev, gpointer);
 static void button_release_event (GtkWidget *, GdkEventButton *, gpointer);
+static void gesture_pressed (GtkGestureLongPress *, gdouble x, gdouble y, gpointer);
+static void gesture_end (GtkGestureLongPress *, GdkEventSequence *, gpointer);
 static void handle_close (GtkButton *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
 static void handle_undo (GtkButton *, gpointer);
@@ -799,6 +804,44 @@ static void button_release_event (GtkWidget *, GdkEventButton *, gpointer)
     curmon = -1;
 }
 
+static void gesture_pressed (GtkGestureLongPress *, gdouble x, gdouble y, gpointer)
+{
+    pressed = TRUE;
+    press_x = x;
+    press_y = y;
+}
+
+static void gesture_end (GtkGestureLongPress *, GdkEventSequence *, gpointer)
+{
+    GtkWidget *menu;
+    int m;
+
+    if (pressed)
+    {
+        curmon = -1;
+        for (m = 0; m < MAX_MONS; m++)
+        {
+            if (mons[m].modes == NULL || mons[m].enabled == FALSE) continue;
+
+            if (press_x > SCALE(mons[m].x) && press_x < SCALE(mons[m].x + screen_w (mons[m]))
+                && press_y > SCALE(mons[m].y) && press_y < SCALE(mons[m].y + screen_h (mons[m])))
+            {
+                curmon = m;
+                mousex = press_x - SCALE(mons[m].x);
+                mousey = press_y - SCALE(mons[m].y);
+            }
+        }
+
+        if (curmon != -1)
+        {
+            menu = create_menu (curmon);
+            curmon = -1;
+            GdkRectangle rect = {press_x, press_y, 0, 0};
+            gtk_menu_popup_at_rect (GTK_MENU (menu), gtk_widget_get_window (da), &rect, GDK_GRAVITY_CENTER, GDK_GRAVITY_NORTH_WEST, NULL);
+        }
+    }
+    pressed = FALSE;
+}
 static void handle_close (GtkButton *, gpointer)
 {
     if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
@@ -942,6 +985,13 @@ int main (int argc, char *argv[])
     g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
+
+    /* Set up long press */
+    GtkGesture *gesture = gtk_gesture_long_press_new (da);
+    gtk_gesture_single_set_touch_only (GTK_GESTURE_SINGLE (gesture), FALSE);
+    g_signal_connect (gesture, "pressed", G_CALLBACK (gesture_pressed), NULL);
+    g_signal_connect (gesture, "end", G_CALLBACK (gesture_end), NULL);
+    gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture), GTK_PHASE_TARGET);
 
     gtk_widget_show_all (win);
 
