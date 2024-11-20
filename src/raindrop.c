@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <locale.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
+#include <gtk-layer-shell/gtk-layer-shell.h>
 #include "raindrop.h"
 
 extern wm_functions_t labwc_functions;
@@ -61,6 +62,7 @@ wm_functions_t wm_fn;
 gboolean pressed = FALSE;
 double press_x;
 double press_y;
+GtkWidget *id[MAX_MONS], *lbl[MAX_MONS];
 
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
@@ -106,6 +108,7 @@ static void handle_apply (GtkButton *, gpointer);
 static void handle_undo (GtkButton *, gpointer);
 static void handle_zoom (GtkButton *, gpointer data);
 static void handle_menu (GtkButton *btn, gpointer);
+static void handle_ident (GtkButton *, gpointer);
 static void end_program (GtkWidget *, GdkEvent *, gpointer);
 
 /*----------------------------------------------------------------------------*/
@@ -910,6 +913,61 @@ static void handle_menu (GtkButton *btn, gpointer)
         GDK_GRAVITY_NORTH_WEST, GDK_GRAVITY_SOUTH_WEST, NULL);
 }
 
+gboolean hide_ids (gpointer)
+{
+    int m;
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (id[m])
+        {
+            gtk_widget_destroy (id[m]);
+        }
+    }
+    return FALSE;
+}
+
+void identify_monitors (void)
+{
+    int m, n;
+    PangoFontDescription *fd = pango_font_description_from_string ("Sans Bold 32");
+    PangoAttribute *attr = pango_attr_font_desc_new (fd);
+    PangoAttrList *attrs = pango_attr_list_new ();
+    pango_attr_list_insert (attrs, attr);
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        id[m] = NULL;
+        if (mons[m].modes == NULL) continue;
+        if (mons[m].enabled)
+        {
+            id[m] = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+            lbl[m] = gtk_label_new (mons[m].name);
+            gtk_label_set_attributes (GTK_LABEL (lbl[m]), attrs);
+
+            gtk_container_add (GTK_CONTAINER (id[m]), lbl[m]);
+            if (gtk_layer_is_supported ()) gtk_layer_init_for_window (GTK_WINDOW (id[m]));
+
+            for (n = 0; n < gdk_display_get_n_monitors (gdk_display_get_default ()); n++)
+            {
+                char *buf = gdk_screen_get_monitor_plug_name (gdk_display_get_default_screen (gdk_display_get_default ()), n);
+                if (!strcmp (mons[m].name, buf))
+                {
+                    if (gtk_layer_is_supported ()) gtk_layer_set_monitor (GTK_WINDOW (id[m]), gdk_display_get_monitor (gdk_display_get_default (), n));
+                    gtk_widget_show_all (id[m]);
+                    gtk_window_present (GTK_WINDOW (id[m]));
+                }
+            }
+        }
+    }
+
+    g_timeout_add (1000, G_SOURCE_FUNC (hide_ids), NULL);
+}
+
+static void handle_ident (GtkButton *, gpointer)
+{
+    identify_monitors ();
+}
+
 static void end_program (GtkWidget *, GdkEvent *, gpointer)
 {
     if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
@@ -985,6 +1043,9 @@ int main (int argc, char *argv[])
     g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
+    g_signal_connect (gtk_builder_get_object (builder, "btn_ident"), "clicked", G_CALLBACK (handle_ident), NULL);
+
+    g_object_unref (builder);
 
     /* Set up long press */
     GtkGesture *gesture = gtk_gesture_long_press_new (da);

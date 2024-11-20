@@ -66,6 +66,7 @@ typedef struct {
     void (*revert_config) (void);
     void (*revert_touchscreens) (void);
     void (*update_system_config) (void);
+    void (*identify_monitors) (void);
 } wm_functions_t;
 
 /*----------------------------------------------------------------------------*/
