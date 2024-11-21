@@ -932,7 +932,7 @@ void identify_monitors (void)
     GdkMonitor *mon;
     int m, n;
 
-    PangoFontDescription *fd = pango_font_description_from_string ("Sans Bold 32");
+    PangoFontDescription *fd = pango_font_description_from_string ("sans 32");
     PangoAttribute *attr = pango_attr_font_desc_new (fd);
     PangoAttrList *attrs = pango_attr_list_new ();
     pango_attr_list_insert (attrs, attr);
