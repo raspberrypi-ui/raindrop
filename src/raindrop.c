@@ -928,7 +928,10 @@ gboolean hide_ids (gpointer)
 
 void identify_monitors (void)
 {
+    GdkDisplay *disp = gdk_display_get_default ();
+    GdkMonitor *mon;
     int m, n;
+
     PangoFontDescription *fd = pango_font_description_from_string ("Sans Bold 32");
     PangoAttribute *attr = pango_attr_font_desc_new (fd);
     PangoAttrList *attrs = pango_attr_list_new ();
@@ -943,17 +946,30 @@ void identify_monitors (void)
             id[m] = gtk_window_new (GTK_WINDOW_TOPLEVEL);
             lbl[m] = gtk_label_new (mons[m].name);
             gtk_label_set_attributes (GTK_LABEL (lbl[m]), attrs);
+            gtk_window_set_decorated (GTK_WINDOW (id[m]), FALSE);
+            gtk_window_set_skip_taskbar_hint (GTK_WINDOW (id[m]), TRUE);
+            gtk_window_set_skip_pager_hint (GTK_WINDOW (id[m]), TRUE);
 
             gtk_container_add (GTK_CONTAINER (id[m]), lbl[m]);
             if (gtk_layer_is_supported ()) gtk_layer_init_for_window (GTK_WINDOW (id[m]));
+            gtk_widget_show_all (id[m]);
 
-            for (n = 0; n < gdk_display_get_n_monitors (gdk_display_get_default ()); n++)
+            for (n = 0; n < gdk_display_get_n_monitors (disp); n++)
             {
-                char *buf = gdk_screen_get_monitor_plug_name (gdk_display_get_default_screen (gdk_display_get_default ()), n);
+                char *buf = gdk_screen_get_monitor_plug_name (gdk_display_get_default_screen (disp), n);
                 if (!strcmp (mons[m].name, buf))
                 {
-                    if (gtk_layer_is_supported ()) gtk_layer_set_monitor (GTK_WINDOW (id[m]), gdk_display_get_monitor (gdk_display_get_default (), n));
-                    gtk_widget_show_all (id[m]);
+                    mon = gdk_display_get_monitor (disp, n);
+                    if (gtk_layer_is_supported ()) gtk_layer_set_monitor (GTK_WINDOW (id[m]), mon);
+                    else
+                    {
+                        GdkRectangle geom;
+                        int w, h;
+
+                        gdk_monitor_get_geometry (mon, &geom);
+                        gtk_window_get_size (GTK_WINDOW (id[m]), &w, &h);
+                        gtk_window_move (GTK_WINDOW (id[m]), geom.x + geom.width / 2 - w / 2, geom.y + geom.height / 2 - h / 2);
+                    }
                     gtk_window_present (GTK_WINDOW (id[m]));
                 }
             }
