@@ -575,6 +575,7 @@ static void set_timer_msg (void)
 
 static void handle_cancel (GtkButton *, gpointer)
 {
+    g_source_remove (tid);
     handle_undo (NULL, NULL);
     gtk_widget_destroy (conf);
 }
@@ -595,7 +596,6 @@ static gboolean revert_timeout (gpointer)
     }
     else
     {
-        tid = 0;
         handle_cancel (NULL, NULL);
         return FALSE;
     }
