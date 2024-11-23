@@ -972,6 +972,7 @@ void identify_monitors (void)
                     }
                     gtk_window_present (GTK_WINDOW (id[m]));
                 }
+                g_free (buf);
             }
         }
     }
