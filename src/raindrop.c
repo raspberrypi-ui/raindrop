@@ -55,7 +55,7 @@ int curmon;
 int scale = 8;
 int rev_time;
 int tid;
-GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb;
+GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb, *ident;
 GList *touchscreens;
 gboolean use_x;
 wm_functions_t wm_fn;
@@ -108,6 +108,8 @@ static void handle_apply (GtkButton *, gpointer);
 static void handle_undo (GtkButton *, gpointer);
 static void handle_zoom (GtkButton *, gpointer data);
 static void handle_menu (GtkButton *btn, gpointer);
+static gboolean hide_ids (gpointer);
+static void identify_monitors (void);
 static void handle_ident (GtkButton *, gpointer);
 static void end_program (GtkWidget *, GdkEvent *, gpointer);
 
@@ -269,6 +271,8 @@ static void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
         cairo_rotate (cr, mons[m].rotation * G_PI / 180.0);
         cairo_rel_move_to (cr, -w / 2, -h / 2);
         pango_cairo_show_layout (cr, layout);
+        g_object_unref (layout);
+        pango_font_description_free (font);
         cairo_restore (cr);
     }
 }
@@ -913,29 +917,25 @@ static void handle_menu (GtkButton *btn, gpointer)
         GDK_GRAVITY_NORTH_WEST, GDK_GRAVITY_SOUTH_WEST, NULL);
 }
 
-gboolean hide_ids (gpointer)
+static gboolean hide_ids (gpointer)
 {
     int m;
+    gtk_widget_set_sensitive (ident, TRUE);
     for (m = 0; m < MAX_MONS; m++)
     {
-        if (id[m])
-        {
-            gtk_widget_destroy (id[m]);
-        }
+        if (id[m]) gtk_widget_destroy (id[m]);
     }
     return FALSE;
 }
 
-void identify_monitors (void)
+static void identify_monitors (void)
 {
     GdkDisplay *disp = gdk_display_get_default ();
     GdkMonitor *mon;
+    PangoFontDescription *fd;
+    PangoAttribute *attr;
+    PangoAttrList *attrs;
     int m, n;
-
-    PangoFontDescription *fd = pango_font_description_from_string ("sans 32");
-    PangoAttribute *attr = pango_attr_font_desc_new (fd);
-    PangoAttrList *attrs = pango_attr_list_new ();
-    pango_attr_list_insert (attrs, attr);
 
     for (m = 0; m < MAX_MONS; m++)
     {
@@ -945,38 +945,50 @@ void identify_monitors (void)
         {
             id[m] = gtk_window_new (GTK_WINDOW_TOPLEVEL);
             lbl[m] = gtk_label_new (mons[m].name);
-            gtk_label_set_attributes (GTK_LABEL (lbl[m]), attrs);
             gtk_window_set_decorated (GTK_WINDOW (id[m]), FALSE);
             gtk_window_set_skip_taskbar_hint (GTK_WINDOW (id[m]), TRUE);
             gtk_window_set_skip_pager_hint (GTK_WINDOW (id[m]), TRUE);
 
-            gtk_container_add (GTK_CONTAINER (id[m]), lbl[m]);
             if (gtk_layer_is_supported ()) gtk_layer_init_for_window (GTK_WINDOW (id[m]));
-            gtk_widget_show_all (id[m]);
 
             for (n = 0; n < gdk_display_get_n_monitors (disp); n++)
             {
                 char *buf = gdk_screen_get_monitor_plug_name (gdk_display_get_default_screen (disp), n);
                 if (!strcmp (mons[m].name, buf))
                 {
+                    GdkRectangle geom;
                     mon = gdk_display_get_monitor (disp, n);
+                    gdk_monitor_get_geometry (mon, &geom);
+
+                    fd = pango_font_description_from_string ("sans");
+                    pango_font_description_set_size (fd, PANGO_SCALE * geom.width / 60);
+                    attr = pango_attr_font_desc_new (fd);
+                    attrs = pango_attr_list_new ();
+                    pango_attr_list_insert (attrs, attr);
+                    gtk_label_set_attributes (GTK_LABEL (lbl[m]), attrs);
+
+                    gtk_container_add (GTK_CONTAINER (id[m]), lbl[m]);
+                    gtk_widget_show_all (id[m]);
+
                     if (gtk_layer_is_supported ()) gtk_layer_set_monitor (GTK_WINDOW (id[m]), mon);
                     else
                     {
-                        GdkRectangle geom;
                         int w, h;
 
-                        gdk_monitor_get_geometry (mon, &geom);
                         gtk_window_get_size (GTK_WINDOW (id[m]), &w, &h);
                         gtk_window_move (GTK_WINDOW (id[m]), geom.x + geom.width / 2 - w / 2, geom.y + geom.height / 2 - h / 2);
                     }
                     gtk_window_present (GTK_WINDOW (id[m]));
+
+                    pango_attr_list_unref (attrs);
+                    pango_font_description_free (fd);
                 }
                 g_free (buf);
             }
         }
     }
 
+    gtk_widget_set_sensitive (ident, FALSE);
     g_timeout_add (1000, G_SOURCE_FUNC (hide_ids), NULL);
 }
 
@@ -1060,7 +1072,8 @@ int main (int argc, char *argv[])
     g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
-    g_signal_connect (gtk_builder_get_object (builder, "btn_ident"), "clicked", G_CALLBACK (handle_ident), NULL);
+    ident = (GtkWidget *) gtk_builder_get_object (builder, "btn_ident");
+    g_signal_connect (ident, "clicked", G_CALLBACK (handle_ident), NULL);
 
     g_object_unref (builder);
 
