@@ -37,7 +37,6 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
-                <accelerator key="s" signal="clicked" modifiers="GDK_MOD1_MASK"/>
                 <child>
                   <object class="GtkBox">
                     <property name="visible">True</property>
@@ -47,7 +46,9 @@
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Screens</property>
+                        <property name="label" translatable="yes">_Screens</property>
+                        <property name="use-underline">True</property>
+                        <property name="mnemonic-widget">btn_menu</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
