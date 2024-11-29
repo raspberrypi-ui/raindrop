@@ -7,6 +7,8 @@ Standards-Version: 4.5.1
 Homepage: http://raspberrypi.com/
 
 Package: raindrop
+Replaces: arandr
+Breaks: arandr
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libgtk-3-0 (>= 3.24), libxml2, libinput-tools, wlr-randr
 Description: Screen configuration tool for Raspberry Pi Desktop
