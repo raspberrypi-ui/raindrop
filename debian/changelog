@@ -1,3 +1,9 @@
+raindrop (0.11) bookworm; urgency=medium
+
+  * Add identify option and keyboard shortcuts
+
+ -- Simon Long <simon@raspberrypi.com>  Fri, 29 Nov 2024 10:23:44 +0000
+
 raindrop (0.10) bookworm; urgency=medium
 
   * Add long press gesture for touchscreens
