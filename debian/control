@@ -2,11 +2,13 @@ Source: raindrop
 Section: unknown
 Priority: optional
 Maintainer: Simon Long <simon@raspberrypi.com>
-Build-Depends: debhelper-compat (= 13), meson, libgtk-3-dev (>= 3.24), libxml2-dev, intltool (>= 0.40.0)
+Build-Depends: debhelper-compat (= 13), meson, libgtk-3-dev (>= 3.24), libxml2-dev, intltool (>= 0.40.0), libgtk-layer-shell-dev (>= 0.6.0)
 Standards-Version: 4.5.1
 Homepage: http://raspberrypi.com/
 
 Package: raindrop
+Replaces: arandr
+Breaks: arandr
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libgtk-3-0 (>= 3.24), libxml2, libinput-tools, wlr-randr
 Description: Screen configuration tool for Raspberry Pi Desktop

@@ -46,7 +46,9 @@
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Screens</property>
+                        <property name="label" translatable="yes">_Screens</property>
+                        <property name="use-underline">True</property>
+                        <property name="mnemonic-widget">btn_menu</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -78,6 +80,22 @@
               </packing>
             </child>
             <child>
+              <object class="GtkButton" id="btn_ident">
+                <property name="label" translatable="yes">_Identify</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="use-underline">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+                <property name="secondary">True</property>
+                <property name="non-homogeneous">True</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkButton" id="btn_zin">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
@@ -95,7 +113,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">2</property>
                 <property name="non-homogeneous">True</property>
               </packing>
             </child>
@@ -117,29 +135,17 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">3</property>
                 <property name="non-homogeneous">True</property>
               </packing>
             </child>
             <child>
               <object class="GtkButton" id="btn_close">
-                <property name="label" translatable="yes">Close</property>
+                <property name="label" translatable="yes">_Close</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_undo">
-                <property name="label" translatable="yes">Undo</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
+                <property name="use-underline">True</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -148,16 +154,31 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="btn_apply">
-                <property name="label" translatable="yes">Apply</property>
+              <object class="GtkButton" id="btn_undo">
+                <property name="label" translatable="yes">_Undo</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="use-underline">True</property>
               </object>
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
                 <property name="position">5</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="btn_apply">
+                <property name="label" translatable="yes">_Apply</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="use-underline">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">6</property>
               </packing>
             </child>
           </object>
