@@ -1067,7 +1067,6 @@ void init_plugin (void)
     g_signal_connect (zin, "clicked", G_CALLBACK (handle_zoom), (gpointer) 1);
     g_signal_connect (zout, "clicked", G_CALLBACK (handle_zoom), (gpointer) -1);
 
-    g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
     ident = (GtkWidget *) gtk_builder_get_object (builder, "btn_ident");

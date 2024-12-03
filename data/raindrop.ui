@@ -141,20 +141,6 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="btn_close">
-                <property name="label" translatable="yes">_Close</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="use-underline">True</property>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">4</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkButton" id="btn_undo">
                 <property name="label" translatable="yes">_Undo</property>
                 <property name="visible">True</property>
@@ -198,7 +184,6 @@
       <widget name="btn_menu"/>
       <widget name="btn_zin"/>
       <widget name="btn_zout"/>
-      <widget name="btn_close"/>
       <widget name="btn_undo"/>
       <widget name="btn_apply"/>
     </widgets>
