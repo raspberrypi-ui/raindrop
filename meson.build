@@ -1,7 +1,7 @@
-project ('raindrop','c')
+project ('rpcc_raindrop','c')
 
 share_dir = join_paths(get_option('prefix'), 'share')
-resource_dir = join_paths(share_dir, 'raindrop')
+resource_dir = join_paths(share_dir, 'rpcc')
 ui_dir = join_paths(resource_dir, 'ui')
 desktop_dir = join_paths(share_dir, 'applications')
 

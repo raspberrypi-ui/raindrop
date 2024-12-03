@@ -7,9 +7,10 @@
     <property name="title" translatable="yes">Screen Configuration</property>
     <property name="icon-name">computer</property>
     <child>
-      <object class="GtkBox">
+      <object class="GtkBox" id="raindrop_page">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
+        <property name="border-width">10</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkDrawingArea" id="da">

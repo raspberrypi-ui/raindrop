@@ -64,6 +64,8 @@ double press_x;
 double press_y;
 GtkWidget *id[MAX_MONS], *lbl[MAX_MONS];
 
+GtkBuilder *builder;
+
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
 /*----------------------------------------------------------------------------*/
@@ -226,7 +228,7 @@ static void sort_modes (void)
 /* Drawing */
 /*----------------------------------------------------------------------------*/
 
-static void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
+static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
 {
     PangoLayout *layout;
     PangoFontDescription *font;
@@ -236,8 +238,8 @@ static void draw (GtkDrawingArea *, cairo_t *cr, gpointer)
     GdkRGBA fg = { 1.0, 1.0, 1.0, 0.75 };
     GdkRGBA bk = { 0.0, 0.0, 0.0, 1.0 };
 
-    screenw = gtk_widget_get_allocated_width (GTK_WIDGET (win));
-    screenh = gtk_widget_get_allocated_height (GTK_WIDGET (win));
+    screenw = gtk_widget_get_allocated_width (GTK_WIDGET (da));
+    screenh = gtk_widget_get_allocated_height (GTK_WIDGET (da));
 
     // window fill
     gdk_cairo_set_source_rgba (cr, &bg);
@@ -1007,10 +1009,8 @@ static void end_program (GtkWidget *, GdkEvent *, gpointer)
 /* Main function */
 /*----------------------------------------------------------------------------*/
 
-int main (int argc, char *argv[])
+void init_plugin (void)
 {
-    GtkBuilder *builder;
-
     setlocale (LC_ALL, "");
     bindtextdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR);
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
@@ -1043,8 +1043,6 @@ int main (int argc, char *argv[])
     // ensure the config file reflects the current state, or undo won't work...
     wm_fn.save_config ();
 
-    gtk_init (&argc, &argv);
-
     // build the UI
     builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
@@ -1075,19 +1073,39 @@ int main (int argc, char *argv[])
     ident = (GtkWidget *) gtk_builder_get_object (builder, "btn_ident");
     g_signal_connect (ident, "clicked", G_CALLBACK (handle_ident), NULL);
 
-    g_object_unref (builder);
-
     /* Set up long press */
     GtkGesture *gesture = gtk_gesture_long_press_new (da);
     gtk_gesture_single_set_touch_only (GTK_GESTURE_SINGLE (gesture), FALSE);
     g_signal_connect (gesture, "pressed", G_CALLBACK (gesture_pressed), NULL);
     g_signal_connect (gesture, "end", G_CALLBACK (gesture_end), NULL);
     gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture), GTK_PHASE_TARGET);
+}
 
-    gtk_widget_show_all (win);
+int plugin_tabs (void)
+{
+    return 1;
+}
 
-    gtk_main ();
-    return 0;
+const char *plugin_name (int tab)
+{
+    return "Screens";
+}
+
+GtkWidget *get_plugin (int tab)
+{
+    GtkWidget *window, *plugin;
+
+    window = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
+    plugin = (GtkWidget *) gtk_builder_get_object (builder, "raindrop_page");
+
+    gtk_container_remove (GTK_CONTAINER (window), plugin);
+
+    return plugin;
+}
+
+void free_plugin (void)
+{
+    g_object_unref (builder);
 }
 
 /* End of file */
