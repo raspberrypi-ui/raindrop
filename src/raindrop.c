@@ -926,6 +926,7 @@ static gboolean hide_ids (gpointer)
     for (m = 0; m < MAX_MONS; m++)
     {
         if (id[m]) gtk_widget_destroy (id[m]);
+        id[m] = NULL;
     }
     return FALSE;
 }
