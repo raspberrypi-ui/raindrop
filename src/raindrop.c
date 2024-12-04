@@ -1087,7 +1087,7 @@ int plugin_tabs (void)
 
 const char *tab_name (int tab)
 {
-    return "Screens";
+    return C_("tab", "Screens");
 }
 
 GtkWidget *get_tab (int tab)
