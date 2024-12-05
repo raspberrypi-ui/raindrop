@@ -12,9 +12,11 @@ xml = dependency ('libxml-2.0')
 layershell = dependency('gtk-layer-shell-0')
 deps = [ gtk, xml, layershell ]
 
-shared_module(meson.project_name(), sources,
-        dependencies: deps,
-        install: true,
+if meson.project_name().contains('rpcc')
+  shared_module(meson.project_name(), sources, dependencies: deps, install: true,
         install_dir: get_option('libdir') / 'rpcc',
         c_args : '-DPLUGIN_NAME="' + meson.project_name() + '"'
-)
+  )
+else
+  executable (meson.project_name(), sources, dependencies: deps, install: true)
+endif

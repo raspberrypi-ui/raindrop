@@ -1,7 +1,14 @@
+# To build standalone, use 'rasputin'
+#project ('raindrop','c')
+# To build plugin, use 'rpcc_rasputin'
 project ('rpcc_raindrop','c')
 
 share_dir = join_paths(get_option('prefix'), 'share')
-resource_dir = join_paths(share_dir, 'rpcc')
+if meson.project_name().contains('rpcc')
+  resource_dir = join_paths(share_dir, 'rpcc')
+else
+  resource_dir = join_paths(share_dir, meson.project_name())
+endif
 ui_dir = join_paths(resource_dir, 'ui')
 desktop_dir = join_paths(share_dir, 'applications')
 

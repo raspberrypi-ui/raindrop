@@ -64,8 +64,6 @@ double press_x;
 double press_y;
 GtkWidget *id[MAX_MONS], *lbl[MAX_MONS];
 
-GtkBuilder *builder;
-
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
 /*----------------------------------------------------------------------------*/
@@ -1006,9 +1004,13 @@ static void end_program (GtkWidget *, GdkEvent *, gpointer)
     gtk_main_quit ();
 }
 
+#ifdef PLUGIN_NAME
+
 /*----------------------------------------------------------------------------*/
-/* Main function */
+/* Plugin interface */
 /*----------------------------------------------------------------------------*/
+
+GtkBuilder *builder;
 
 void init_plugin (void)
 {
@@ -1068,6 +1070,7 @@ void init_plugin (void)
     g_signal_connect (zin, "clicked", G_CALLBACK (handle_zoom), (gpointer) 1);
     g_signal_connect (zout, "clicked", G_CALLBACK (handle_zoom), (gpointer) -1);
 
+    gtk_widget_hide (GTK_WIDGET (gtk_builder_get_object (builder, "btn_close")));
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
     ident = (GtkWidget *) gtk_builder_get_object (builder, "btn_ident");
@@ -1107,6 +1110,97 @@ void free_plugin (void)
 {
     g_object_unref (builder);
 }
+
+#else
+
+/*----------------------------------------------------------------------------*/
+/* Main function */
+/*----------------------------------------------------------------------------*/
+
+int main (int argc, char *argv[])
+{
+    GtkBuilder *builder;
+
+    setlocale (LC_ALL, "");
+    bindtextdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR);
+    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+    textdomain (GETTEXT_PACKAGE);
+
+    if (getenv ("WAYLAND_DISPLAY"))
+    {
+        if (getenv ("WAYFIRE_CONFIG_FILE")) wm_fn = wayfire_functions;
+        else wm_fn = labwc_functions;
+        use_x = FALSE;
+    }
+    else
+    {
+        use_x = TRUE;
+        wm_fn = openbox_functions;
+    }
+
+    clear_config (TRUE);
+
+    find_touchscreens ();
+
+    wm_fn.load_config ();
+
+    find_backlights ();
+    sort_modes ();
+    copy_config (mons, bmons);
+
+    wm_fn.load_touchscreens ();
+
+    // ensure the config file reflects the current state, or undo won't work...
+    wm_fn.save_config ();
+
+    gtk_init (&argc, &argv);
+
+    // build the UI
+    builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
+
+    win = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
+    g_signal_connect (win, "delete-event", G_CALLBACK (end_program), NULL);
+
+    curmon = -1;
+    da = (GtkWidget *) gtk_builder_get_object (builder, "da");
+    gtk_widget_set_events (da, GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
+    g_signal_connect (da, "draw", G_CALLBACK (draw), NULL);
+    g_signal_connect (da, "button-press-event", G_CALLBACK (button_press_event), NULL);
+    g_signal_connect (da, "button-release-event", G_CALLBACK (button_release_event), NULL);
+    g_signal_connect (da, "motion-notify-event", G_CALLBACK (motion_notify_event), NULL);
+    gtk_window_set_default_size (GTK_WINDOW (win), 500, 400);
+
+    undo = (GtkWidget *) gtk_builder_get_object (builder, "btn_undo");
+    g_signal_connect (undo, "clicked", G_CALLBACK (handle_undo), NULL);
+    gtk_widget_set_sensitive (undo, FALSE);
+
+    zin = (GtkWidget *) gtk_builder_get_object (builder, "btn_zin");
+    zout = (GtkWidget *) gtk_builder_get_object (builder, "btn_zout");
+    g_signal_connect (zin, "clicked", G_CALLBACK (handle_zoom), (gpointer) 1);
+    g_signal_connect (zout, "clicked", G_CALLBACK (handle_zoom), (gpointer) -1);
+
+    g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
+    g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
+    g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
+    ident = (GtkWidget *) gtk_builder_get_object (builder, "btn_ident");
+    g_signal_connect (ident, "clicked", G_CALLBACK (handle_ident), NULL);
+
+    g_object_unref (builder);
+
+    /* Set up long press */
+    GtkGesture *gesture = gtk_gesture_long_press_new (da);
+    gtk_gesture_single_set_touch_only (GTK_GESTURE_SINGLE (gesture), FALSE);
+    g_signal_connect (gesture, "pressed", G_CALLBACK (gesture_pressed), NULL);
+    g_signal_connect (gesture, "end", G_CALLBACK (gesture_end), NULL);
+    gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture), GTK_PHASE_TARGET);
+
+    gtk_widget_show_all (win);
+
+    gtk_main ();
+    return 0;
+}
+
+#endif
 
 /* End of file */
 /*============================================================================*/
