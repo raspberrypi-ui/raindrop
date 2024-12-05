@@ -1,9 +1,9 @@
 [Desktop Entry]
+Type=Application
 Name=Screen Configuration
-GenericName=Screen Configuration
+Comment=Configure monitor arrangement, scaling and orientation
 Icon=computer
 Exec=raindrop
 Terminal=false
-Type=Application
 Categories=Settings;
 StartupNotify=true
