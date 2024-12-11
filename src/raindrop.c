@@ -1108,6 +1108,7 @@ GtkWidget *get_tab (int tab)
 
 gboolean reboot_needed (void)
 {
+    // note - if you change a touchscreen under wayfire you do need to reboot, but ...
     return FALSE;
 }
 
