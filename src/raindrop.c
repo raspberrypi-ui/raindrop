@@ -1,5 +1,5 @@
 /*============================================================================
-Copyright (c) 2024 Raspberry Pi Holdings Ltd.
+Copyright (c) 2024 Raspberry Pi
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -48,21 +48,20 @@ extern wm_functions_t wayfire_functions;
 /* Global data */
 /*----------------------------------------------------------------------------*/
 
-monitor_t mons[MAX_MONS], bmons[MAX_MONS];
-int mousex, mousey;
-int screenw, screenh;
-int curmon;
-int scale = 8;
-int rev_time;
-int tid;
-GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb, *ident;
+static GtkBuilder *builder;
+static GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb, *ident;
+static GtkWidget *id[MAX_MONS], *lbl[MAX_MONS];
+
+monitor_t mons[MAX_MONS];
+static monitor_t bmons[MAX_MONS];
+
 GList *touchscreens;
-gboolean use_x;
-wm_functions_t wm_fn;
-gboolean pressed = FALSE;
-double press_x;
-double press_y;
-GtkWidget *id[MAX_MONS], *lbl[MAX_MONS];
+
+static int mousex, mousey, screenw, screenh, curmon, scale, rev_time, tid;
+static gboolean use_x, pressed;
+static double press_x, press_y;
+
+static wm_functions_t wm_fn;
 
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
@@ -103,7 +102,6 @@ static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion *ev, gpointer
 static void button_release_event (GtkWidget *, GdkEventButton *, gpointer);
 static void gesture_pressed (GtkGestureLongPress *, gdouble x, gdouble y, gpointer);
 static void gesture_end (GtkGestureLongPress *, GdkEventSequence *, gpointer);
-static void handle_close (GtkButton *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
 static void handle_undo (GtkButton *, gpointer);
 static void handle_zoom (GtkButton *, gpointer data);
@@ -111,7 +109,11 @@ static void handle_menu (GtkButton *btn, gpointer);
 static gboolean hide_ids (gpointer);
 static void identify_monitors (void);
 static void handle_ident (GtkButton *, gpointer);
-static void end_program (GtkWidget *, GdkEvent *, gpointer);
+static void init_config (void);
+#ifndef PLUGIN_NAME
+static void handle_close (GtkButton *, gpointer);
+static void close_prog (GtkWidget *, GdkEvent *, gpointer);
+#endif
 
 /*----------------------------------------------------------------------------*/
 /* Helper functions */
@@ -610,9 +612,7 @@ static gboolean revert_timeout (gpointer)
 
 static void show_confirm_dialog (void)
 {
-    GtkBuilder *builder;
-
-    builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
+    GtkBuilder *builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
     conf = (GtkWidget *) gtk_builder_get_object (builder, "modal");
     gtk_window_set_transient_for (GTK_WINDOW (conf), GTK_WINDOW (win));
@@ -621,6 +621,8 @@ static void show_confirm_dialog (void)
     g_signal_connect (gtk_builder_get_object (builder, "modal_ok"), "clicked", G_CALLBACK (handle_ok), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "modal_cancel"), "clicked", G_CALLBACK (handle_cancel), NULL);
     gtk_widget_show (conf);
+    g_object_unref (builder);
+
     rev_time = 10;
     set_timer_msg ();
     tid = g_timeout_add (1000, (GSourceFunc) revert_timeout, NULL);
@@ -849,11 +851,6 @@ static void gesture_end (GtkGestureLongPress *, GdkEventSequence *, gpointer)
     }
     pressed = FALSE;
 }
-static void handle_close (GtkButton *, gpointer)
-{
-    if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
-    gtk_main_quit ();
-}
 
 static void handle_apply (GtkButton *, gpointer)
 {
@@ -954,7 +951,10 @@ static void identify_monitors (void)
 
             for (n = 0; n < gdk_display_get_n_monitors (disp); n++)
             {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
                 char *buf = gdk_screen_get_monitor_plug_name (gdk_display_get_default_screen (disp), n);
+#pragma GCC diagnostic pop
                 if (!strcmp (mons[m].name, buf))
                 {
                     GdkRectangle geom;
@@ -998,39 +998,12 @@ static void handle_ident (GtkButton *, gpointer)
     identify_monitors ();
 }
 
-static void end_program (GtkWidget *, GdkEvent *, gpointer)
-{
-    if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
-    gtk_main_quit ();
-}
-
-#ifdef PLUGIN_NAME
-
 /*----------------------------------------------------------------------------*/
-/* Plugin interface */
+/* Initial configuration                                                      */
 /*----------------------------------------------------------------------------*/
 
-GtkBuilder *builder;
-
-void init_plugin (void)
+static void init_config (void)
 {
-    setlocale (LC_ALL, "");
-    bindtextdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR);
-    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-    textdomain (GETTEXT_PACKAGE);
-
-    if (getenv ("WAYLAND_DISPLAY"))
-    {
-        if (getenv ("WAYFIRE_CONFIG_FILE")) wm_fn = wayfire_functions;
-        else wm_fn = labwc_functions;
-        use_x = FALSE;
-    }
-    else
-    {
-        use_x = TRUE;
-        wm_fn = openbox_functions;
-    }
-
     clear_config (TRUE);
 
     find_touchscreens ();
@@ -1046,20 +1019,14 @@ void init_plugin (void)
     // ensure the config file reflects the current state, or undo won't work...
     wm_fn.save_config ();
 
-    // build the UI
-    builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
-
-    win = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
-    g_signal_connect (win, "delete-event", G_CALLBACK (end_program), NULL);
-
     curmon = -1;
+    scale = 8;
     da = (GtkWidget *) gtk_builder_get_object (builder, "da");
     gtk_widget_set_events (da, GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
     g_signal_connect (da, "draw", G_CALLBACK (draw), NULL);
     g_signal_connect (da, "button-press-event", G_CALLBACK (button_press_event), NULL);
     g_signal_connect (da, "button-release-event", G_CALLBACK (button_release_event), NULL);
     g_signal_connect (da, "motion-notify-event", G_CALLBACK (motion_notify_event), NULL);
-    gtk_window_set_default_size (GTK_WINDOW (win), 500, 400);
 
     undo = (GtkWidget *) gtk_builder_get_object (builder, "btn_undo");
     g_signal_connect (undo, "clicked", G_CALLBACK (handle_undo), NULL);
@@ -1070,7 +1037,6 @@ void init_plugin (void)
     g_signal_connect (zin, "clicked", G_CALLBACK (handle_zoom), (gpointer) 1);
     g_signal_connect (zout, "clicked", G_CALLBACK (handle_zoom), (gpointer) -1);
 
-    gtk_widget_hide (GTK_WIDGET (gtk_builder_get_object (builder, "btn_close")));
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
     ident = (GtkWidget *) gtk_builder_get_object (builder, "btn_ident");
@@ -1082,6 +1048,36 @@ void init_plugin (void)
     g_signal_connect (gesture, "pressed", G_CALLBACK (gesture_pressed), NULL);
     g_signal_connect (gesture, "end", G_CALLBACK (gesture_end), NULL);
     gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture), GTK_PHASE_TARGET);
+    pressed = FALSE;
+}
+
+/*----------------------------------------------------------------------------*/
+/* Plugin interface */
+/*----------------------------------------------------------------------------*/
+
+#ifdef PLUGIN_NAME
+
+void init_plugin (void)
+{
+    setlocale (LC_ALL, "");
+    bindtextdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR);
+    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+    textdomain (GETTEXT_PACKAGE);
+
+    use_x = TRUE;
+    if (getenv ("WAYLAND_DISPLAY"))
+    {
+        if (getenv ("WAYFIRE_CONFIG_FILE")) wm_fn = wayfire_functions;
+        else wm_fn = labwc_functions;
+        use_x = FALSE;
+    }
+    else wm_fn = openbox_functions;
+
+    builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
+
+    init_config ();
+
+    gtk_widget_hide (GTK_WIDGET (gtk_builder_get_object (builder, "btn_close")));
 }
 
 int plugin_tabs (void)
@@ -1121,89 +1117,60 @@ void free_plugin (void)
 #else
 
 /*----------------------------------------------------------------------------*/
+/* Main window button handlers                                                */
+/*----------------------------------------------------------------------------*/
+
+static void handle_close (GtkButton *, gpointer)
+{
+    if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
+    gtk_main_quit ();
+}
+
+static void close_prog (GtkWidget *, GdkEvent *, gpointer)
+{
+    if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
+    gtk_main_quit ();
+}
+
+/*----------------------------------------------------------------------------*/
 /* Main function */
 /*----------------------------------------------------------------------------*/
 
 int main (int argc, char *argv[])
 {
-    GtkBuilder *builder;
-
     setlocale (LC_ALL, "");
     bindtextdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR);
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
 
+    use_x = TRUE;
     if (getenv ("WAYLAND_DISPLAY"))
     {
         if (getenv ("WAYFIRE_CONFIG_FILE")) wm_fn = wayfire_functions;
         else wm_fn = labwc_functions;
         use_x = FALSE;
     }
-    else
-    {
-        use_x = TRUE;
-        wm_fn = openbox_functions;
-    }
-
-    clear_config (TRUE);
-
-    find_touchscreens ();
-
-    wm_fn.load_config ();
-
-    find_backlights ();
-    sort_modes ();
-    copy_config (mons, bmons);
-
-    wm_fn.load_touchscreens ();
-
-    // ensure the config file reflects the current state, or undo won't work...
-    wm_fn.save_config ();
+    else wm_fn = openbox_functions;
 
     gtk_init (&argc, &argv);
 
-    // build the UI
     builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
     win = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
-    g_signal_connect (win, "delete-event", G_CALLBACK (end_program), NULL);
-
-    curmon = -1;
-    da = (GtkWidget *) gtk_builder_get_object (builder, "da");
-    gtk_widget_set_events (da, GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
-    g_signal_connect (da, "draw", G_CALLBACK (draw), NULL);
-    g_signal_connect (da, "button-press-event", G_CALLBACK (button_press_event), NULL);
-    g_signal_connect (da, "button-release-event", G_CALLBACK (button_release_event), NULL);
-    g_signal_connect (da, "motion-notify-event", G_CALLBACK (motion_notify_event), NULL);
-    gtk_window_set_default_size (GTK_WINDOW (win), 500, 400);
-
-    undo = (GtkWidget *) gtk_builder_get_object (builder, "btn_undo");
-    g_signal_connect (undo, "clicked", G_CALLBACK (handle_undo), NULL);
-    gtk_widget_set_sensitive (undo, FALSE);
-
-    zin = (GtkWidget *) gtk_builder_get_object (builder, "btn_zin");
-    zout = (GtkWidget *) gtk_builder_get_object (builder, "btn_zout");
-    g_signal_connect (zin, "clicked", G_CALLBACK (handle_zoom), (gpointer) 1);
-    g_signal_connect (zout, "clicked", G_CALLBACK (handle_zoom), (gpointer) -1);
+    g_signal_connect (win, "delete-event", G_CALLBACK (close_prog), NULL);
 
     g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
-    g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
-    g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);
-    ident = (GtkWidget *) gtk_builder_get_object (builder, "btn_ident");
-    g_signal_connect (ident, "clicked", G_CALLBACK (handle_ident), NULL);
+
+    gtk_window_set_default_size (GTK_WINDOW (win), 500, 400);
+
+    init_config ();
 
     g_object_unref (builder);
-
-    /* Set up long press */
-    GtkGesture *gesture = gtk_gesture_long_press_new (da);
-    gtk_gesture_single_set_touch_only (GTK_GESTURE_SINGLE (gesture), FALSE);
-    g_signal_connect (gesture, "pressed", G_CALLBACK (gesture_pressed), NULL);
-    g_signal_connect (gesture, "end", G_CALLBACK (gesture_end), NULL);
-    gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture), GTK_PHASE_TARGET);
 
     gtk_widget_show_all (win);
 
     gtk_main ();
+
     return 0;
 }
 
