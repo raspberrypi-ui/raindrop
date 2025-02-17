@@ -1,5 +1,5 @@
 /*============================================================================
-Copyright (c) 2024 Raspberry Pi Holdings Ltd.
+Copyright (c) 2024 Raspberry Pi
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -65,14 +65,14 @@ void update_labwc_system_config (void)
 {
     char *cmd;
 
-    system (SUDO_PREFIX "mkdir -p /usr/share/labwc/");
+    system (SUDO_PREFIX "mkdir -p /etc/xdg/labwc-greeter/");
 
-    cmd = g_strdup_printf (SUDO_PREFIX "cp %s/kanshi/config /usr/share/labwc/config.kanshi",
+    cmd = g_strdup_printf (SUDO_PREFIX "cp %s/kanshi/config /etc/xdg/labwc-greeter/config.kanshi",
         g_get_user_config_dir ());
     system (cmd);
     g_free (cmd);
 
-    cmd = g_strdup_printf (SUDO_PREFIX "cp %s/labwc/rcgreeter.xml /usr/share/labwc/rc.xml",
+    cmd = g_strdup_printf (SUDO_PREFIX "cp %s/labwc/rcgreeter.xml /etc/xdg/labwc-greeter/rc.xml",
         g_get_user_config_dir ());
     system (cmd);
     g_free (cmd);
@@ -476,7 +476,7 @@ void save_labwc_touchscreens (void)
     g_free (outfile);
 
     outfile = g_build_filename (g_get_user_config_dir (), "labwc/rcgreeter.xml", NULL);
-    cmd = g_strdup_printf ("cp /usr/share/labwc/rc.xml %s", outfile);
+    cmd = g_strdup_printf ("cp /etc/xdg/labwc-greeter/rc.xml %s", outfile);
     system (cmd);
     g_free (cmd);
     write_touchscreens (outfile);
