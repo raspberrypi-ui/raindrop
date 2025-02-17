@@ -1108,6 +1108,7 @@ GtkWidget *get_tab (int tab)
 
 gboolean reboot_needed (void)
 {
+    if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
     // note - if you change a touchscreen under wayfire you do need to reboot, but ...
     return FALSE;
 }
