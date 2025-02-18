@@ -49,7 +49,7 @@ extern wm_functions_t wayfire_functions;
 /*----------------------------------------------------------------------------*/
 
 static GtkBuilder *builder;
-static GtkWidget *da, *win, *undo, *zin, *zout, *conf, *clbl, *cpb, *ident;
+static GtkWidget *da, *main_dlg, *undo, *zin, *zout, *conf, *clbl, *cpb, *ident;
 static GtkWidget *id[MAX_MONS], *lbl[MAX_MONS];
 
 monitor_t mons[MAX_MONS];
@@ -615,7 +615,7 @@ static void show_confirm_dialog (void)
     GtkBuilder *builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
     conf = (GtkWidget *) gtk_builder_get_object (builder, "modal");
-    gtk_window_set_transient_for (GTK_WINDOW (conf), GTK_WINDOW (win));
+    gtk_window_set_transient_for (GTK_WINDOW (conf), GTK_WINDOW (main_dlg));
     clbl = (GtkWidget *) gtk_builder_get_object (builder, "modal_msg");
     cpb = (GtkWidget *) gtk_builder_get_object (builder, "modal_pb");
     g_signal_connect (gtk_builder_get_object (builder, "modal_ok"), "clicked", G_CALLBACK (handle_ok), NULL);
@@ -1090,6 +1090,11 @@ const char *tab_name (int tab)
     return C_("tab", "Screens");
 }
 
+const char *tab_id (int tab)
+{
+    return NULL;
+}
+
 GtkWidget *get_tab (int tab)
 {
     GtkWidget *window, *plugin;
@@ -1156,18 +1161,18 @@ int main (int argc, char *argv[])
 
     builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
-    win = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
-    g_signal_connect (win, "delete-event", G_CALLBACK (close_prog), NULL);
+    main_dlg = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
+    g_signal_connect (main_dlg, "delete-event", G_CALLBACK (close_prog), NULL);
 
     g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
 
-    gtk_window_set_default_size (GTK_WINDOW (win), 500, 400);
+    gtk_window_set_default_size (GTK_WINDOW (main_dlg), 500, 400);
 
     init_config ();
 
     g_object_unref (builder);
 
-    gtk_widget_show_all (win);
+    gtk_widget_show_all (main_dlg);
 
     gtk_main ();
 
