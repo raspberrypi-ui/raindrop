@@ -1,7 +1,7 @@
 # To build standalone, use 'raindrop'
-#project ('raindrop','c')
+project ('raindrop','c')
 # To build plugin, use 'rpcc_raindrop'
-project ('rpcc_raindrop','c')
+#project ('rpcc_raindrop','c')
 
 share_dir = join_paths(get_option('prefix'), 'share')
 if meson.project_name().contains('rpcc')
