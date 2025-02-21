@@ -11,6 +11,7 @@
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <property name="border-width">10</property>
+        <property name="spacing">5</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkDrawingArea" id="da">
@@ -27,10 +28,6 @@
           <object class="GtkButtonBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="margin-start">5</property>
-            <property name="margin-end">5</property>
-            <property name="margin-top">5</property>
-            <property name="margin-bottom">5</property>
             <property name="spacing">5</property>
             <property name="layout-style">end</property>
             <child>
