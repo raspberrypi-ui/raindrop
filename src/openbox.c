@@ -105,7 +105,7 @@ void load_openbox_config (void)
                 if (strstr (line, "primary")) mons[mon].primary = TRUE;
                 cptr = strtok (line, " ");
                 mons[mon].name = g_strdup (cptr);
-                while (cptr[0] != '(')
+                while (cptr && cptr[0] != '(')
                 {
                     if (cptr[0] >= '1' && cptr[0] <= '9')
                     {

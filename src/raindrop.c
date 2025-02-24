@@ -954,7 +954,7 @@ static void identify_monitors (void)
             for (n = 0; n < gdk_display_get_n_monitors (disp); n++)
             {
                 char *buf = gdk_screen_get_monitor_plug_name (gdk_display_get_default_screen (disp), n);
-                if (!strcmp (mons[m].name, buf))
+                if (!g_strcmp0 (mons[m].name, buf))
                 {
                     GdkRectangle geom;
                     mon = gdk_display_get_monitor (disp, n);
