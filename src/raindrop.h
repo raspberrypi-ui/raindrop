@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Typedefs and macros */
 /*----------------------------------------------------------------------------*/
 
-#define SUDO_PREFIX "env SUDO_ASKPASS=" PACKAGE_DATA_DIR "/pwdraindrop.sh sudo -A "
+#define SUDO_PREFIX "env SUDO_ASKPASS=/usr/bin/sudopwd sudo -A "
 
 #define MAX_MONS 10
 
