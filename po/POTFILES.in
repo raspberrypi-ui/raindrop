@@ -1,0 +1,8 @@
+[encoding: UTF-8]
+src/raindrop.c
+src/openbox.c
+src/wayfire.c
+src/labwc.c
+[type: gettext/glade] data/raindrop.ui
+# files added by intltool-prepare
+data/raindrop.desktop.in
