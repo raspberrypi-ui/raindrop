@@ -29,6 +29,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Typedefs and macros */
 /*----------------------------------------------------------------------------*/
 
+#ifdef PLUGIN_NAME
+extern const char *dgetfixt (const char *domain, const char *msgctxid);
+#undef _
+#define _(a) dgettext(GETTEXT_PACKAGE,a)
+#undef C_
+#define C_(a,b) dgetfixt(GETTEXT_PACKAGE,a"\004"b)
+#endif
+
 #define SUDO_PREFIX "env SUDO_ASKPASS=/usr/bin/sudopwd sudo -A "
 
 #define MAX_MONS 10
