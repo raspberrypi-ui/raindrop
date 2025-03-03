@@ -612,7 +612,10 @@ static gboolean revert_timeout (gpointer)
 
 static void show_confirm_dialog (void)
 {
-    GtkBuilder *builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
+    GtkBuilder *builder;
+
+    textdomain (GETTEXT_PACKAGE);
+    builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
     conf = (GtkWidget *) gtk_builder_get_object (builder, "modal");
     gtk_window_set_transient_for (GTK_WINDOW (conf), GTK_WINDOW (main_dlg));
@@ -1117,13 +1120,6 @@ gboolean reboot_needed (void)
 void free_plugin (void)
 {
     g_object_unref (builder);
-}
-
-const char *dgetfixt (const char *domain, const char *msgctxid)
-{
-    const char *text = dgettext (domain, msgctxid);
-    if (!strchr (text, 0x04)) return text;
-    return dgettext (domain, strchr (msgctxid, 0x04) + 1);
 }
 
 #else
