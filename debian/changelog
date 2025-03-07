@@ -1,3 +1,9 @@
+raindrop (0.13) bookworm; urgency=medium
+
+  * Hybrid version
+
+ -- Simon Long <simon@raspberrypi.com>  Fri, 07 Mar 2025 11:08:52 +0000
+
 raindrop (0.12) bookworm; urgency=medium
 
   * Fix revert timer bug
