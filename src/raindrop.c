@@ -58,8 +58,9 @@ static monitor_t bmons[MAX_MONS];
 GList *touchscreens;
 
 static int mousex, mousey, screenw, screenh, curmon, scale, rev_time, tid;
-static gboolean use_x, pressed;
+static gboolean pressed;
 static double press_x, press_y;
+static wm_type wm;
 
 static wm_functions_t wm_fn;
 
@@ -86,6 +87,8 @@ static void set_enable (GtkCheckMenuItem *item, gpointer data);
 static void set_touchscreen (GtkMenuItem *item, gpointer data);
 static void set_brightness (GtkMenuItem *item, gpointer data);
 static void set_primary (GtkCheckMenuItem *item, gpointer data);
+static void set_mode_emu (GtkCheckMenuItem *item, gpointer data);
+static void set_mode_mt (GtkCheckMenuItem *item, gpointer data);
 static GtkWidget *create_menu (long mon);
 static GtkWidget *create_popup (void);
 static void set_timer_msg (void);
@@ -196,6 +199,7 @@ static void clear_config (gboolean first)
         mons[m].touchscreen = NULL;
         mons[m].backlight = NULL;
         mons[m].primary = FALSE;
+        mons[m].tmode = MODE_NONE;
     }
 }
 
@@ -381,11 +385,16 @@ static void set_touchscreen (GtkMenuItem *item, gpointer data)
     for (m = 0; m < MAX_MONS; m++)
     {
         if (mons[m].modes == NULL) continue;
-        if (m == mon) mons[m].touchscreen = g_strdup (ts);
+        if (m == mon)
+        {
+            mons[m].touchscreen = g_strdup (ts);
+            if (wm == WM_LABWC) mons[m].tmode = MODE_MOUSEEMU;
+        }
         else if (!g_strcmp0 (mons[m].touchscreen, ts))
         {
             g_free (mons[m].touchscreen);
             mons[m].touchscreen = NULL;
+            mons[m].tmode = MODE_NONE;
         }
     }
 }
@@ -412,6 +421,30 @@ static void set_primary (GtkCheckMenuItem *item, gpointer data)
     }
 }
 
+static void set_mode_emu (GtkCheckMenuItem *item, gpointer data)
+{
+    int mon = (long) data;
+    int m;
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].modes == NULL) continue;
+        if (m == mon) mons[m].tmode = MODE_MOUSEEMU;
+    }
+}
+
+static void set_mode_mt (GtkCheckMenuItem *item, gpointer data)
+{
+    int mon = (long) data;
+    int m;
+
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].modes == NULL) continue;
+        if (m == mon) mons[m].tmode = MODE_MULTITOUCH;
+    }
+}
+
 /*----------------------------------------------------------------------------*/
 /* Context menu */
 /*----------------------------------------------------------------------------*/
@@ -419,7 +452,7 @@ static void set_primary (GtkCheckMenuItem *item, gpointer data)
 static GtkWidget *create_menu (long mon)
 {
     GList *model;
-    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu, *tmenu, *bmenu;
+    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu, *tmenu, *tmmenu, *bmenu;
     int lastw, lasth, level;
     float lastf;
     output_mode_t *mode;
@@ -439,7 +472,7 @@ static GtkWidget *create_menu (long mon)
         return menu;
     }
 
-    if (use_x)
+    if (wm == WM_OPENBOX)
     {
         item = gtk_check_menu_item_new_with_label (_("Primary"));
         gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].primary);
@@ -499,6 +532,27 @@ static GtkWidget *create_menu (long mon)
     if (touchscreens)
     {
         tmenu = gtk_menu_new ();
+        if (mons[mon].tmode != MODE_NONE)
+        {
+            tmmenu = gtk_menu_new ();
+
+            item = gtk_check_menu_item_new_with_label (_("Mouse Emulation"));
+            gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].tmode == MODE_MOUSEEMU);
+            g_signal_connect (item, "activate", G_CALLBACK (set_mode_emu), (gpointer) mon);
+            gtk_menu_shell_append (GTK_MENU_SHELL (tmmenu), item);
+
+            item = gtk_check_menu_item_new_with_label (_("Multitouch"));
+            gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].tmode == MODE_MULTITOUCH);
+            g_signal_connect (item, "activate", G_CALLBACK (set_mode_mt), (gpointer) mon);
+            gtk_menu_shell_append (GTK_MENU_SHELL (tmmenu), item);
+
+            item = gtk_menu_item_new_with_label (_("Mode"));
+            gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), tmmenu);
+            gtk_menu_shell_append (GTK_MENU_SHELL (tmenu), item);
+
+            item = gtk_separator_menu_item_new ();
+            gtk_menu_shell_append (GTK_MENU_SHELL (tmenu), item);
+        }
         model = touchscreens;
         while (model)
         {
@@ -1067,14 +1121,24 @@ void init_plugin (void)
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
 
-    use_x = TRUE;
     if (getenv ("WAYLAND_DISPLAY"))
     {
-        if (getenv ("WAYFIRE_CONFIG_FILE")) wm_fn = wayfire_functions;
-        else wm_fn = labwc_functions;
-        use_x = FALSE;
+        if (getenv ("WAYFIRE_CONFIG_FILE"))
+        {
+            wm = WM_WAYFIRE;
+            wm_fn = wayfire_functions;
+        }
+        else
+        {
+            wm = WM_LABWC;
+            wm_fn = labwc_functions;
+        }
     }
-    else wm_fn = openbox_functions;
+    else
+    {
+        wm = WM_OPENBOX;
+        wm_fn = openbox_functions;
+    }
 
     builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
@@ -1151,14 +1215,24 @@ int main (int argc, char *argv[])
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
 
-    use_x = TRUE;
     if (getenv ("WAYLAND_DISPLAY"))
     {
-        if (getenv ("WAYFIRE_CONFIG_FILE")) wm_fn = wayfire_functions;
-        else wm_fn = labwc_functions;
-        use_x = FALSE;
+        if (getenv ("WAYFIRE_CONFIG_FILE"))
+        {
+            wm = WM_WAYFIRE;
+            wm_fn = wayfire_functions;
+        }
+        else
+        {
+            wm = WM_LABWC;
+            wm_fn = labwc_functions;
+        }
     }
-    else wm_fn = openbox_functions;
+    else
+    {
+        wm = WM_OPENBOX;
+        wm_fn = openbox_functions;
+    }
 
     gtk_init (&argc, &argv);
 

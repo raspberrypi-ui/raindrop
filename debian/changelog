@@ -1,3 +1,9 @@
+raindrop (0.14) bookworm; urgency=medium
+
+  * Add touchscreen mode menu
+
+ -- Simon Long <simon@raspberrypi.com>  Tue, 29 Apr 2025 10:19:00 +0100
+
 raindrop (0.13) bookworm; urgency=medium
 
   * Hybrid version

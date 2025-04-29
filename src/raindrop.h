@@ -41,6 +41,18 @@ extern const char *dgetfixt (const char *domain, const char *msgctxid);
 
 #define MAX_MONS 10
 
+typedef enum {
+    WM_OPENBOX,
+    WM_WAYFIRE,
+    WM_LABWC
+} wm_type;
+
+typedef enum {
+    MODE_MULTITOUCH,
+    MODE_MOUSEEMU,
+    MODE_NONE
+} touch_mode_t;
+
 typedef struct {
     int width;
     int height;
@@ -62,6 +74,7 @@ typedef struct {
     char *touchscreen;
     char *backlight;
     gboolean primary;
+    touch_mode_t tmode;
 } monitor_t;
 
 typedef struct {

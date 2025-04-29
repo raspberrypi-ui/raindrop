@@ -331,6 +331,7 @@ static void read_touchscreen_xml (char *filename)
     xmlAttr *attr;
     char *dev, *mon;
     int m;
+    touch_mode_t mode;
     GList *model;
     gboolean exists;
 
@@ -356,6 +357,11 @@ static void read_touchscreen_xml (char *filename)
                         dev = g_strdup ((char *) attr->children->content);
                     if (!g_strcmp0 ((char *) attr->name, "mapToOutput"))
                         mon = g_strdup ((char *) attr->children->content);
+                    if (!g_strcmp0 ((char *) attr->name, "mouseEmulation"))
+                    {
+                        if (!g_strcmp0 ((char *) attr->children->content, "yes")) mode = MODE_MOUSEEMU;
+                        else mode = MODE_MULTITOUCH;
+                    }
                 }
                 if (dev && mon)
                 {
@@ -378,6 +384,13 @@ static void read_touchscreen_xml (char *filename)
                             if (!g_strcmp0 (mons[m].name, mon))
                             {
                                 mons[m].touchscreen = g_strdup (dev);
+                                mons[m].tmode = mode;
+                            }
+                            else if (!g_strcmp0 (dev, mons[m].touchscreen))
+                            {
+                                g_free (mons[m].touchscreen);
+                                mons[m].touchscreen = NULL;
+                                mons[m].tmode = MODE_NONE;
                             }
                         }
                     }
@@ -449,7 +462,7 @@ static void write_touchscreens (char *filename)
         child_node = xmlNewNode (NULL, (xmlChar *) "touch");
         xmlSetProp (child_node, (xmlChar *) "deviceName", (xmlChar *) mons[m].touchscreen);
         xmlSetProp (child_node, (xmlChar *) "mapToOutput", (xmlChar *) mons[m].name);
-        xmlSetProp (child_node, (xmlChar *) "mouseEmulation", (xmlChar *) "yes");
+        xmlSetProp (child_node, (xmlChar *) "mouseEmulation", mons[m].tmode == MODE_MOUSEEMU ? (xmlChar *) "yes" : (xmlChar *) "no");
         xmlAddChild (root_node, child_node);
     }
 
