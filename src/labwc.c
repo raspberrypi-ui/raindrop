@@ -420,8 +420,10 @@ void load_labwc_touchscreens (void)
 static void write_touchscreens (char *filename)
 {
     xmlDocPtr xDoc;
-    xmlNode *root_node, *child_node, *next;
+    xmlNode *root_node, *child_node;
+    xmlAttr *attr;
     int m;
+    gboolean set;
 
     xmlInitParser ();
     LIBXML_TEST_VERSION
@@ -440,30 +442,42 @@ static void write_touchscreens (char *filename)
         xmlNewNs (root_node, (xmlChar *) "http://openbox.org/3.4/rc", NULL);
     }
 
-    child_node = root_node->children;
-    while (child_node)
-    {
-        next = child_node->next;
-        if (child_node->type == XML_ELEMENT_NODE)
-        {
-            if (!g_strcmp0 ((char *) child_node->name, "touch"))
-            {
-                xmlUnlinkNode (child_node);
-                xmlFreeNode (child_node);
-            }
-        }
-        child_node = next;
-    }
-
     for (m = 0; m < MAX_MONS; m++)
     {
         if (mons[m].modes == NULL) continue;
         if (mons[m].touchscreen == NULL) continue;
-        child_node = xmlNewNode (NULL, (xmlChar *) "touch");
-        xmlSetProp (child_node, (xmlChar *) "deviceName", (xmlChar *) mons[m].touchscreen);
-        xmlSetProp (child_node, (xmlChar *) "mapToOutput", (xmlChar *) mons[m].name);
-        xmlSetProp (child_node, (xmlChar *) "mouseEmulation", mons[m].tmode == MODE_MOUSEEMU ? (xmlChar *) "yes" : (xmlChar *) "no");
-        xmlAddChild (root_node, child_node);
+        set = FALSE;
+
+        child_node = root_node->children;
+        while (child_node)
+        {
+            if (child_node->type == XML_ELEMENT_NODE)
+            {
+                if (!g_strcmp0 ((char *) child_node->name, "touch"))
+                {
+                    for (attr = child_node->properties; attr; attr = attr->next)
+                    {
+                        if (!g_strcmp0 ((char *) attr->name, "deviceName")
+                            && !g_strcmp0 ((char *) attr->children->content, mons[m].touchscreen))
+                        {
+                            xmlSetProp (child_node, (xmlChar *) "mapToOutput", (xmlChar *) mons[m].name);
+                            xmlSetProp (child_node, (xmlChar *) "mouseEmulation", mons[m].tmode == MODE_MOUSEEMU ? (xmlChar *) "yes" : (xmlChar *) "no");
+                            set = TRUE;
+                        }
+                    }
+                }
+            }
+            child_node = child_node->next;
+        }
+
+        if (!set)
+        {
+            child_node = xmlNewNode (NULL, (xmlChar *) "touch");
+            xmlSetProp (child_node, (xmlChar *) "deviceName", (xmlChar *) mons[m].touchscreen);
+            xmlSetProp (child_node, (xmlChar *) "mapToOutput", (xmlChar *) mons[m].name);
+            xmlSetProp (child_node, (xmlChar *) "mouseEmulation", mons[m].tmode == MODE_MOUSEEMU ? (xmlChar *) "yes" : (xmlChar *) "no");
+            xmlAddChild (root_node, child_node);
+        }
     }
 
     xmlSaveFile (filename, xDoc);
