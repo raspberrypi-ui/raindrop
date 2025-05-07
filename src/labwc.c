@@ -351,6 +351,7 @@ static void read_touchscreen_xml (char *filename)
             {
                 dev = NULL;
                 mon = NULL;
+                mode = MODE_MULTITOUCH;
                 for (attr = child_node->properties; attr; attr = attr->next)
                 {
                     if (!g_strcmp0 ((char *) attr->name, "deviceName"))
