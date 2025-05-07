@@ -1,3 +1,9 @@
+raindrop (0.15) bookworm; urgency=medium
+
+  * Preserve unused default config entries for greeter
+
+ -- Simon Long <simon@raspberrypi.com>  Wed, 07 May 2025 08:45:35 +0100
+
 raindrop (0.14) bookworm; urgency=medium
 
   * Add touchscreen mode menu
