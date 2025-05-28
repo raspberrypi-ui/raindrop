@@ -1,3 +1,9 @@
+raindrop (0.16) trixie; urgency=medium
+
+  * Build as plugin
+
+ -- Simon Long <simon@raspberrypi.com>  Wed, 28 May 2025 20:15:50 +0100
+
 raindrop (0.15) bookworm; urgency=medium
 
   * Preserve unused default config entries for greeter
