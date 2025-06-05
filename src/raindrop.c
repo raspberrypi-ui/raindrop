@@ -1157,6 +1157,11 @@ const char *tab_name (int tab)
     return C_("tab", "Screens");
 }
 
+const char *icon_name (int tab)
+{
+    return "computer";
+}
+
 const char *tab_id (int tab)
 {
     return NULL;
