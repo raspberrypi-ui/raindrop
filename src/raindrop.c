@@ -1159,7 +1159,7 @@ const char *tab_name (int tab)
 
 const char *icon_name (int tab)
 {
-    return "computer";
+    return "video-display";
 }
 
 const char *tab_id (int tab)
