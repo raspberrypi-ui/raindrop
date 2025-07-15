@@ -10,6 +10,6 @@ Package: raindrop
 Replaces: arandr
 Breaks: arandr
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libgtk-3-0 (>= 3.24), libxml2, libinput-tools, wlr-randr, sudopwd, lightdm
+Depends: ${shlibs:Depends}, ${misc:Depends}, libinput-tools, wlr-randr, sudopwd, lightdm
 Description: Screen configuration tool for Raspberry Pi Desktop
  GTK screen configuration tool for labwc and openbox environments.

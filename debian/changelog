@@ -1,3 +1,9 @@
+raindrop (1.1) trixie; urgency=medium
+
+  * Fix dependencies
+
+ -- Simon Long <simon@raspberrypi.com>  Tue, 15 Jul 2025 15:01:58 +0100
+
 raindrop (1.0) trixie; urgency=medium
 
   * Build as plugin
