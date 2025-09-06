@@ -49,7 +49,7 @@ extern wm_functions_t wayfire_functions;
 /*----------------------------------------------------------------------------*/
 
 static GtkBuilder *builder;
-static GtkWidget *da, *main_dlg, *undo, *zin, *zout, *conf, *clbl, *cpb, *ident;
+static GtkWidget *da, *main_dlg, *undo, *zin, *zout, *conf, *clbl, *cpb, *ident, *overlay, *zooms;
 static GtkWidget *id[MAX_MONS], *lbl[MAX_MONS];
 
 monitor_t mons[MAX_MONS];
@@ -1091,8 +1091,11 @@ static void init_config (void)
 
     zin = (GtkWidget *) gtk_builder_get_object (builder, "btn_zin");
     zout = (GtkWidget *) gtk_builder_get_object (builder, "btn_zout");
+    overlay = (GtkWidget *) gtk_builder_get_object (builder, "overlay");
+    zooms = (GtkWidget *) gtk_builder_get_object (builder, "zooms");
     g_signal_connect (zin, "clicked", G_CALLBACK (handle_zoom), (gpointer) 1);
     g_signal_connect (zout, "clicked", G_CALLBACK (handle_zoom), (gpointer) -1);
+    gtk_overlay_add_overlay (GTK_OVERLAY (overlay), zooms);
 
     g_signal_connect (gtk_builder_get_object (builder, "btn_apply"), "clicked", G_CALLBACK (handle_apply), NULL);
     g_signal_connect (gtk_builder_get_object (builder, "btn_menu"), "clicked", G_CALLBACK (handle_menu), NULL);

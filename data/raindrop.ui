@@ -14,9 +14,15 @@
         <property name="spacing">5</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkDrawingArea" id="da">
+          <object class="GtkOverlay" id="overlay">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
+            <child>
+              <object class="GtkDrawingArea" id="da">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+              </object>
+            </child>
           </object>
           <packing>
             <property name="expand">True</property>
@@ -94,50 +100,6 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="btn_zin">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="margin-start">10</property>
-                <property name="always-show-image">True</property>
-                <child>
-                  <object class="GtkImage">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="icon-name">zoom-in</property>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-                <property name="non-homogeneous">True</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_zout">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="margin-end">10</property>
-                <property name="always-show-image">True</property>
-                <child>
-                  <object class="GtkImage">
-                    <property name="visible">True</property>
-                    <property name="can-focus">False</property>
-                    <property name="icon-name">zoom-out</property>
-                  </object>
-                </child>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
-                <property name="non-homogeneous">True</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkButton" id="btn_close">
                 <property name="label" translatable="yes">_Close</property>
                 <property name="visible">True</property>
@@ -193,8 +155,7 @@
     <property name="mode">vertical</property>
     <widgets>
       <widget name="btn_menu"/>
-      <widget name="btn_zin"/>
-      <widget name="btn_zout"/>
+      <widget name="btn_ident"/>
       <widget name="btn_close"/>
       <widget name="btn_undo"/>
       <widget name="btn_apply"/>
@@ -301,6 +262,57 @@
           <placeholder/>
         </child>
       </object>
+    </child>
+  </object>
+  <object class="GtkBox" id="zooms">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="halign">end</property>
+    <property name="valign">end</property>
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="GtkButton" id="btn_zin">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+        <property name="margin-end">5</property>
+        <property name="margin-bottom">5</property>
+        <property name="always-show-image">True</property>
+        <child>
+          <object class="GtkImage">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="icon-name">zoom-in</property>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="btn_zout">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+        <property name="margin-end">5</property>
+        <property name="margin-bottom">5</property>
+        <property name="always-show-image">True</property>
+        <child>
+          <object class="GtkImage">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="icon-name">zoom-out</property>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">1</property>
+      </packing>
     </child>
   </object>
 </interface>
