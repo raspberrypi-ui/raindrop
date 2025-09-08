@@ -1,3 +1,9 @@
+raindrop (1.2) trixie; urgency=medium
+
+  * Overlay zoom buttons; add zoom on scroll
+
+ -- Simon Long <simon@raspberrypi.com>  Mon, 08 Sep 2025 09:50:08 +0100
+
 raindrop (1.1) trixie; urgency=medium
 
   * Fix dependencies
