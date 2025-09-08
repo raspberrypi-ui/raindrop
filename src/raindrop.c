@@ -875,7 +875,7 @@ static gboolean scroll (GtkWidget *, GdkEventScroll *ev, gpointer)
 {
     if (ev->direction == 0) handle_zoom (NULL, (gpointer) 1);
     if (ev->direction == 1) handle_zoom (NULL, (gpointer) -1);
-    return FALSE;
+    return TRUE;
 }
 
 static void gesture_pressed (GtkGestureLongPress *, gdouble x, gdouble y, gpointer)
