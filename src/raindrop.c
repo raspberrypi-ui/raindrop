@@ -103,6 +103,7 @@ static void set_backlight (int mon, int level);
 static void button_press_event (GtkWidget *, GdkEventButton *ev, gpointer);
 static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion *ev, gpointer);
 static void button_release_event (GtkWidget *, GdkEventButton *, gpointer);
+static gboolean scroll (GtkWidget *, GdkEventScroll *ev, gpointer);
 static void gesture_pressed (GtkGestureLongPress *, gdouble x, gdouble y, gpointer);
 static void gesture_end (GtkGestureLongPress *, GdkEventSequence *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
@@ -870,6 +871,13 @@ static void button_release_event (GtkWidget *, GdkEventButton *, gpointer)
     curmon = -1;
 }
 
+static gboolean scroll (GtkWidget *, GdkEventScroll *ev, gpointer)
+{
+    if (ev->direction == 0) handle_zoom (NULL, (gpointer) 1);
+    if (ev->direction == 1) handle_zoom (NULL, (gpointer) -1);
+    return FALSE;
+}
+
 static void gesture_pressed (GtkGestureLongPress *, gdouble x, gdouble y, gpointer)
 {
     pressed = TRUE;
@@ -1079,11 +1087,12 @@ static void init_config (void)
     curmon = -1;
     scale = 8;
     da = (GtkWidget *) gtk_builder_get_object (builder, "da");
-    gtk_widget_set_events (da, GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
+    gtk_widget_set_events (da, GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_SCROLL_MASK);
     g_signal_connect (da, "draw", G_CALLBACK (draw), NULL);
     g_signal_connect (da, "button-press-event", G_CALLBACK (button_press_event), NULL);
     g_signal_connect (da, "button-release-event", G_CALLBACK (button_release_event), NULL);
     g_signal_connect (da, "motion-notify-event", G_CALLBACK (motion_notify_event), NULL);
+    g_signal_connect (da, "scroll-event", G_CALLBACK (scroll), NULL);
 
     undo = (GtkWidget *) gtk_builder_get_object (builder, "btn_undo");
     g_signal_connect (undo, "clicked", G_CALLBACK (handle_undo), NULL);
