@@ -102,7 +102,7 @@ static int get_backlight (int mon);
 static void set_backlight (int mon, int level);
 static gboolean button_press_event (GtkWidget *, GdkEventButton *ev, gpointer);
 static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion *ev, gpointer);
-static void button_release_event (GtkWidget *, GdkEventButton *, gpointer);
+static gboolean button_release_event (GtkWidget *, GdkEventButton *, gpointer);
 static gboolean scroll (GtkWidget *, GdkEventScroll *ev, gpointer);
 static void gesture_pressed (GtkGestureLongPress *, gdouble x, gdouble y, gpointer);
 static void gesture_end (GtkGestureLongPress *, GdkEventSequence *, gpointer);
@@ -867,9 +867,10 @@ static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion *ev, gpointer
     return FALSE;
 }
 
-static void button_release_event (GtkWidget *, GdkEventButton *, gpointer)
+static gboolean button_release_event (GtkWidget *, GdkEventButton *, gpointer)
 {
     curmon = -1;
+    return TRUE;
 }
 
 static gboolean scroll (GtkWidget *, GdkEventScroll *ev, gpointer)
