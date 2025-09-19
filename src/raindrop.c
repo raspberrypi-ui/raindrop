@@ -100,7 +100,7 @@ static void find_touchscreens (void);
 static void find_backlights (void);
 static int get_backlight (int mon);
 static void set_backlight (int mon, int level);
-static void button_press_event (GtkWidget *, GdkEventButton *ev, gpointer);
+static gboolean button_press_event (GtkWidget *, GdkEventButton *ev, gpointer);
 static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion *ev, gpointer);
 static void button_release_event (GtkWidget *, GdkEventButton *, gpointer);
 static gboolean scroll (GtkWidget *, GdkEventScroll *ev, gpointer);
@@ -810,7 +810,7 @@ static void set_backlight (int mon, int level)
 /* Event handlers */
 /*----------------------------------------------------------------------------*/
 
-static void button_press_event (GtkWidget *, GdkEventButton *ev, gpointer)
+static gboolean button_press_event (GtkWidget *, GdkEventButton *ev, gpointer)
 {
     GtkWidget *menu;
     int m;
@@ -835,6 +835,7 @@ static void button_press_event (GtkWidget *, GdkEventButton *ev, gpointer)
         curmon = -1;
         gtk_menu_popup_at_pointer (GTK_MENU (menu), gtk_get_current_event ());
     }
+    return TRUE;
 }
 
 static gboolean motion_notify_event (GtkWidget *da, GdkEventMotion *ev, gpointer)
