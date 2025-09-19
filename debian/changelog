@@ -1,3 +1,9 @@
+raindrop (1.3) trixie; urgency=medium
+
+  * Terminate button handlers correctly to prevent signal propagation
+
+ -- Simon Long <simon@raspberrypi.com>  Fri, 19 Sep 2025 14:27:54 +0100
+
 raindrop (1.2) trixie; urgency=medium
 
   * Overlay zoom buttons; add zoom on scroll
