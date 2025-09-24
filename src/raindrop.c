@@ -150,6 +150,7 @@ static void copy_config (monitor_t *from, monitor_t *to)
         to[m].freq = from[m].freq;
         to[m].interlaced = from[m].interlaced;
         to[m].primary = from[m].primary;
+        to[m].scale = from[m].scale;
         if (to[m].touchscreen) g_free (to[m].touchscreen);
         if (from[m].touchscreen) to[m].touchscreen = g_strdup (from[m].touchscreen);
     }
@@ -170,6 +171,7 @@ static gboolean compare_config (monitor_t *from, monitor_t *to)
         if (to[m].freq != from[m].freq) return FALSE;
         if (to[m].interlaced != from[m].interlaced) return FALSE;
         if (to[m].primary != from[m].primary) return FALSE;
+        if (to[m].scale != from[m].scale) return FALSE;
         if (g_strcmp0 (to[m].touchscreen, from[m].touchscreen)) return FALSE;
     }
     return TRUE;
@@ -200,6 +202,7 @@ static void clear_config (gboolean first)
         mons[m].touchscreen = NULL;
         mons[m].backlight = NULL;
         mons[m].primary = FALSE;
+        mons[m].scale = 1.0;
         mons[m].tmode = MODE_NONE;
     }
 }
@@ -370,6 +373,24 @@ static void add_orientation (GtkWidget *menu, long mon, const char *orient, int 
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
 
+static void set_scaling (GtkMenuItem *item, gpointer data)
+{
+    int mon = (long) data;
+    sscanf (gtk_widget_get_name (GTK_WIDGET (item)), "%f", &(mons[mon].scale));
+    gtk_widget_queue_draw (da);
+}
+
+static void add_scaling (GtkWidget *menu, long mon, float scale)
+{
+    char *tag = g_strdup_printf ("%0.1f", scale);
+    GtkWidget *item = gtk_check_menu_item_new_with_label (tag);
+    gtk_widget_set_name (item, tag);
+    g_free (tag);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].scale == scale);
+    g_signal_connect (item, "activate", G_CALLBACK (set_scaling), (gpointer) mon);
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+}
+
 static void set_enable (GtkCheckMenuItem *item, gpointer data)
 {
     int mon = (long) data;
@@ -453,7 +474,7 @@ static void set_mode_mt (GtkCheckMenuItem *item, gpointer data)
 static GtkWidget *create_menu (long mon)
 {
     GList *model;
-    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu, *tmenu, *tmmenu, *bmenu;
+    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu, *tmenu, *tmmenu, *bmenu, *smenu;
     int lastw, lasth, level;
     float lastf;
     output_mode_t *mode;
@@ -529,6 +550,17 @@ static GtkWidget *create_menu (long mon)
     item = gtk_menu_item_new_with_label (_("Orientation"));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), omenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+
+    if (wm != WM_OPENBOX)
+    {
+        smenu = gtk_menu_new ();
+        add_scaling (smenu, mon, 1.0);
+        add_scaling (smenu, mon, 1.5);
+        add_scaling (smenu, mon, 2.0);
+        item = gtk_menu_item_new_with_label (_("Scaling"));
+        gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), smenu);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    }
 
     if (touchscreens)
     {

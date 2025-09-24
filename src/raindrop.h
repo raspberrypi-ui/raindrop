@@ -69,6 +69,7 @@ typedef struct {
     int y;
     int rotation;
     float freq;
+    float scale;
     gboolean interlaced;
     GList *modes;
     char *touchscreen;
