@@ -241,6 +241,7 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
     PangoLayout *layout;
     PangoFontDescription *font;
     int m, w, h, charwid;
+    char *buf;
 
     GdkRGBA bg = { 0.25, 0.25, 0.25, 1.0 };
     GdkRGBA fg = { 1.0, 1.0, 1.0, 0.75 };
@@ -272,6 +273,7 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
         cairo_save (cr);
         font = pango_font_description_from_string ("sans");
         charwid = SCALE (mons[m].width) / strlen (mons[m].name);
+
         pango_font_description_set_size (font, charwid * PANGO_SCALE);
         layout = pango_cairo_create_layout (cr);
         pango_layout_set_text (layout, mons[m].name, -1);
@@ -282,6 +284,22 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
         cairo_rel_move_to (cr, -w / 2, -h / 2);
         pango_cairo_show_layout (cr, layout);
         g_object_unref (layout);
+
+        if (mons[m].scale != 1.0)
+        {
+            cairo_rel_move_to (cr, w / 2, h);
+            pango_font_description_set_size (font, charwid * PANGO_SCALE / 3);
+            layout = pango_cairo_create_layout (cr);
+            buf = g_strdup_printf ("(x%0.1f)", mons[m].scale);
+            pango_layout_set_text (layout, buf, -1);
+            pango_layout_set_font_description (layout, font);
+            pango_layout_get_pixel_size (layout, &w, &h);
+            cairo_rel_move_to (cr, -w / 2, - h / 2);
+            pango_cairo_show_layout (cr, layout);
+            g_free (buf);
+            g_object_unref (layout);
+        }
+
         pango_font_description_free (font);
         cairo_restore (cr);
     }
