@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ============================================================================*/
 
 #include <locale.h>
+#include <sys/stat.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
 #include <gtk-layer-shell/gtk-layer-shell.h>
@@ -83,6 +84,8 @@ static void set_frequency (GtkMenuItem *item, gpointer data);
 static void add_frequency (GtkWidget *menu, long mon, float freq);
 static void set_orientation (GtkMenuItem *item, gpointer data);
 static void add_orientation (GtkWidget *menu, long mon, const char *orient, int rotation);
+static void set_scaling (GtkMenuItem *item, gpointer data);
+static void add_scaling (GtkWidget *menu, long mon, float scaling);
 static void set_enable (GtkCheckMenuItem *item, gpointer data);
 static void set_touchscreen (GtkMenuItem *item, gpointer data);
 static void set_brightness (GtkMenuItem *item, gpointer data);
@@ -114,6 +117,8 @@ static gboolean hide_ids (gpointer);
 static void identify_monitors (void);
 static void handle_ident (GtkButton *, gpointer);
 static void init_config (void);
+static void load_scale (void);
+static void save_scale (void);
 #ifndef PLUGIN_NAME
 static void handle_close (GtkButton *, gpointer);
 static void close_prog (GtkWidget *, GdkEvent *, gpointer);
@@ -398,13 +403,13 @@ static void set_scaling (GtkMenuItem *item, gpointer data)
     gtk_widget_queue_draw (da);
 }
 
-static void add_scaling (GtkWidget *menu, long mon, float scale)
+static void add_scaling (GtkWidget *menu, long mon, float scaling)
 {
-    char *tag = g_strdup_printf ("%0.1f", scale);
+    char *tag = g_strdup_printf ("%0.1f", scaling);
     GtkWidget *item = gtk_check_menu_item_new_with_label (tag);
     gtk_widget_set_name (item, tag);
     g_free (tag);
-    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].scale == scale);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].scale == scaling);
     g_signal_connect (item, "activate", G_CALLBACK (set_scaling), (gpointer) mon);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
@@ -1116,6 +1121,58 @@ static void handle_ident (GtkButton *, gpointer)
 }
 
 /*----------------------------------------------------------------------------*/
+/* Load / save config */
+/*----------------------------------------------------------------------------*/
+
+static void load_scale (void)
+{
+    char *conffile;
+    GKeyFile *kf;
+    GError *err;
+    int val;
+
+    scale = 8;
+
+    conffile = g_build_filename (g_get_user_config_dir (), "rpcc", "config.ini", NULL);
+    kf = g_key_file_new ();
+    if (g_key_file_load_from_file (kf, conffile, G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS, NULL))
+    {
+        err = NULL;
+        val = g_key_file_get_integer (kf, "raindrop", "scale", &err);
+        if (err == NULL && (val == 4 || val == 16)) scale = val;
+        else scale = 8;
+    }
+
+    g_key_file_free (kf);
+    g_free (conffile);
+}
+
+static void save_scale (void)
+{
+    char *conffile, *str;
+    GKeyFile *kf;
+    gsize len;
+
+    conffile = g_build_filename (g_get_user_config_dir (), "rpcc", "config.ini", NULL);
+
+    str = g_path_get_dirname (conffile);
+    g_mkdir_with_parents (str, S_IRUSR | S_IWUSR | S_IXUSR);
+    g_free (str);
+
+    kf = g_key_file_new ();
+    g_key_file_load_from_file (kf, conffile, G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS, NULL);
+
+    g_key_file_set_integer (kf, "raindrop", "scale", scale);
+
+    str = g_key_file_to_data (kf, &len, NULL);
+    g_file_set_contents (conffile, str, len, NULL);
+    g_free (str);
+
+    g_key_file_free (kf);
+    g_free (conffile);
+}
+
+/*----------------------------------------------------------------------------*/
 /* Initial configuration                                                      */
 /*----------------------------------------------------------------------------*/
 
@@ -1137,7 +1194,6 @@ static void init_config (void)
     wm_fn.save_config ();
 
     curmon = -1;
-    scale = 8;
     da = (GtkWidget *) gtk_builder_get_object (builder, "da");
     gtk_widget_set_events (da, GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_SCROLL_MASK);
     g_signal_connect (da, "draw", G_CALLBACK (draw), NULL);
@@ -1206,6 +1262,8 @@ void init_plugin (void)
 
     builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
 
+    load_scale ();
+
     init_config ();
 
     gtk_widget_hide (GTK_WIDGET (gtk_builder_get_object (builder, "btn_close")));
@@ -1245,6 +1303,8 @@ GtkWidget *get_tab (int tab)
 
 gboolean reboot_needed (void)
 {
+    save_scale ();
+
     if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
     // note - if you change a touchscreen under wayfire you do need to reboot, but ...
     return FALSE;
@@ -1313,6 +1373,8 @@ int main (int argc, char *argv[])
     g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
 
     gtk_window_set_default_size (GTK_WINDOW (main_dlg), 500, 400);
+
+    scale = 8;
 
     init_config ();
 
