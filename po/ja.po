@@ -6,196 +6,255 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: arandr\n"
-"Report-Msgid-Bugs-To: chrysn@fsfe.org\n"
-"POT-Creation-Date: 2015-05-21 10:02+0200\n"
-"PO-Revision-Date: 2018-01-17 10:33+0000\n"
-"Last-Translator: Nobuhiro Iwamatsu <iwamatsu@gmail.com>\n"
-"Language-Team: Japanese "
-"<https://hosted.weblate.org/projects/arandr/translations/ja/>\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-02 22:13+0900\n"
+"PO-Revision-Date: 2025-10-02 23:00+0900\n"
+"Last-Translator: Akira Ouchi <akkiesoft@marokun.net>\n"
+"Language-Team: Japanese <https://hosted.weblate.org/projects/arandr/"
+"translations/ja/>\n"
 "Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 2.19-dev\n"
+"X-Generator: Poedit 3.6\n"
 "X-Launchpad-Export-Date: 2011-12-13 05:49+0000\n"
 
-#: screenlayout/gui.py:117
-msgid "_Layout"
-msgstr "レイアウト(_L)"
-
-#: screenlayout/gui.py:128
-msgid "_View"
-msgstr "表示(_V)"
-
-#: screenlayout/gui.py:130
-msgid "_Outputs"
-msgstr "モニター(_O)"
-
-#: screenlayout/gui.py:131
-msgid "Dummy"
-msgstr "ダミー"
-
-#: screenlayout/gui.py:133
-msgid "_System"
-msgstr "システム(_S)"
-
-#: screenlayout/gui.py:134
-msgid "_Keybindings (Metacity)"
-msgstr "キーバインド(Metacity)(_K)"
-
-#: screenlayout/gui.py:136
-msgid "_Help"
-msgstr "ヘルプ(_H)"
-
-#: screenlayout/gui.py:140
-msgid "1:4"
-msgstr "1:4"
-
-#: screenlayout/gui.py:141
-msgid "1:8"
-msgstr "1:8"
-
-#: screenlayout/gui.py:142
-msgid "1:16"
-msgstr "1:16"
-
-#: screenlayout/gui.py:189
-msgid "Script Properties"
-msgstr "スクリプトのプロパティ"
-
-#: screenlayout/gui.py:201
-msgid "Script"
-msgstr "スクリプト"
-
-#: screenlayout/gui.py:217
-#, python-format
-msgid ""
-"XRandR failed:\n"
-"%s"
-msgstr ""
-"XRandR 失敗:\n"
-"%s"
-
-#: screenlayout/gui.py:227
-msgid "Open Layout"
-msgstr "レイアウトを開く"
-
-#: screenlayout/gui.py:239
-msgid "Save Layout"
-msgstr "レイアウトの保存"
-
-#: screenlayout/meta.py:23
-msgid "ARandR Screen Layout Editor"
-msgstr "ARandR スクリーンレイアウトエディター"
-
-#. # translators, please translate in the style of "Another XRandR GUI
-#. # (ein weiteres GUI für XRandR)" so users get both the explanation of
-#. # the acronym and a localized version.
-#: screenlayout/meta.py:27
-msgid "Another XRandR GUI"
-msgstr "他の XRandR GUI"
-
-#: screenlayout/metacity.py:53
-msgid "Accelerator"
-msgstr "アクセラレータ"
-
-#: screenlayout/metacity.py:54
-msgid "Action"
-msgstr "動作"
-
-#: screenlayout/metacity.py:120
-msgid "disabled"
-msgstr "無効"
-
-#: screenlayout/metacity.py:135
-msgid "New accelerator..."
-msgstr "新しいアクセラレーター..."
-
-#: screenlayout/metacity.py:192
-msgid "no action"
-msgstr "動作なし"
-
-#: screenlayout/metacity.py:228
-msgid "incompatible configuration"
-msgstr "矛盾した設定"
-
-#: screenlayout/metacity.py:235
-msgid "other application"
-msgstr "その他のアプリケーション"
-
-#: screenlayout/metacity.py:255
-#, python-format
-msgid "No files in %(folder)r. Save a layout first."
-msgstr "%(folder)r にファイルがありません。最初にレイアウトを保存します。"
-
-#: screenlayout/metacity.py:284
-msgid "gconf not available."
-msgstr "gconf が存在しません。"
-
-#: screenlayout/metacity.py:285
-msgid ""
-"In order to configure metacity, you need to have the python gconf module "
-"installed."
-msgstr "metacity を設定するには、python gconf モジュールをインストールする必要があります。"
-
-#: screenlayout/metacity.py:292
-msgid "Keybindings (via Metacity)"
-msgstr "キーバインド (Metacity経由)"
-
-#: screenlayout/metacity.py:305
-msgid ""
-"Click on a button in the left column and press a key combination you want to "
-"bind to a certain screen layout. (Use backspace to clear accelerators, "
-"escape to abort editing.) Then, select one or more layouts in the right "
-"column.\n"
-"\n"
-"This will only work if you use metacity or another program reading its "
-"configuration."
-msgstr ""
-"左側の列のボタンをクリックし、特定の画面レイアウトに割り当てたいキーの組み合わせを押します(バックスペースを押すとアクセラレータがクリアされ、エスケープを"
-"押すと編集を中断します)。それから、右の列で1つまたは複数のレイアウトを選択してください。\n"
-"\n"
-"この機能は metacity またはその設定を読み込むその他のプログラムをご使用の場合のみ機能します。"
-
-#: screenlayout/widget.py:61
-msgid ""
-"Your configuration does not include an active monitor. Do you want to apply "
-"the configuration?"
-msgstr ""
-"あなたのコンフィグはアクティブなモニターを含んでいません。このコンフィグを適"
-"用してよろしいですか？"
-
-#: screenlayout/widget.py:327
+#: src/raindrop.c:465
 msgid "Active"
 msgstr "アクティブ"
 
-#: screenlayout/widget.py:335
+#: src/raindrop.c:478
 msgid "Primary"
 msgstr "プライマリ"
 
-#: screenlayout/widget.py:349
-#, python-format
-msgid "Setting this resolution is not possible here: %s"
-msgstr "この解像度は可能ではありません: %s"
-
-#: screenlayout/widget.py:362
-#, python-format
-msgid "This orientation is not possible here: %s"
-msgstr "この向きは可能ではありません: %s"
-
-#: screenlayout/widget.py:368
+#: src/raindrop.c:512
 msgid "Resolution"
 msgstr "解像度"
 
-#: screenlayout/widget.py:370
+#: src/raindrop.c:518
+msgid "Frequency"
+msgstr "周波数"
+
+#: src/raindrop.c:525
+msgid "Normal"
+msgstr "通常"
+
+#: src/raindrop.c:526
+msgid "Left"
+msgstr "左"
+
+#: src/raindrop.c:527
+msgid "Inverted"
+msgstr "逆さ"
+
+#: src/raindrop.c:528
+msgid "Right"
+msgstr "右"
+
+#: src/raindrop.c:529
 msgid "Orientation"
 msgstr "向き"
 
-#: screenlayout/xrandr.py:275
-msgid "A part of an output is outside the virtual screen."
-msgstr "出力位置の一部が仮想スクリーンからはみ出しています。"
+#: src/raindrop.c:540
+msgid "Mouse Emulation"
+msgstr "マウスエミュレーション"
 
-#: screenlayout/xrandr.py:278
-msgid "An output is outside the virtual screen."
-msgstr "出力位置が仮想スクリーンからはみ出しています。"
+#: src/raindrop.c:545
+msgid "Multitouch"
+msgstr "マルチタッチ"
+
+#: src/raindrop.c:550
+msgid "Mode"
+msgstr "モード"
+
+#: src/raindrop.c:567
+msgid "Touchscreen"
+msgstr "タッチ画面"
+
+#: src/raindrop.c:585
+msgid "Brightness"
+msgstr "明るさ"
+
+#: src/raindrop.c:634
+#, c-format
+msgid ""
+"Screen updated. Click 'OK' if is this is correct, or 'Cancel' to revert to "
+"previous setting.\n"
+"\n"
+"Reverting in %d seconds..."
+msgstr ""
+"画面が更新されました。正しい場合は 'OK' をクリックしてください。前の設定に戻"
+"す場合は 'キャンセル' をクリックしてください。\n"
+"\n"
+"%d 秒後に元に戻します。"
+
+#: src/raindrop.c:1171
+msgctxt "tab"
+msgid "Screens"
+msgstr "画面"
+
+#: data/raindrop.ui:7 data/raindrop.ui:260 data/raindrop.desktop.in:3
+msgid "Screen Configuration"
+msgstr "画面の構成"
+
+#: data/raindrop.ui:53
+msgid "_Screens"
+msgstr "画面(_S)"
+
+#: data/raindrop.ui:88
+msgid "_Identify"
+msgstr "識別(_I)"
+
+#: data/raindrop.ui:104
+msgid "_Close"
+msgstr "閉じる(_C)"
+
+#: data/raindrop.ui:118
+msgid "_Undo"
+msgstr "元に戻す(_U)"
+
+#: data/raindrop.ui:132
+msgid "_Apply"
+msgstr "適用(_A)"
+
+#: data/raindrop.ui:219
+msgid "_Cancel"
+msgstr "キャンセル(_C)"
+
+#: data/raindrop.ui:234
+msgid "_OK"
+msgstr "_OK"
+
+#: data/raindrop.desktop.in:4
+msgid "Configure monitor arrangement, scaling and orientation"
+msgstr "モニターの配置、スケーリング、向きを構成します"
+
+#~ msgid "_Layout"
+#~ msgstr "レイアウト(_L)"
+
+#~ msgid "_View"
+#~ msgstr "表示(_V)"
+
+#~ msgid "_Outputs"
+#~ msgstr "モニター(_O)"
+
+#~ msgid "Dummy"
+#~ msgstr "ダミー"
+
+#~ msgid "_System"
+#~ msgstr "システム(_S)"
+
+#~ msgid "_Keybindings (Metacity)"
+#~ msgstr "キーバインド(Metacity)(_K)"
+
+#~ msgid "_Help"
+#~ msgstr "ヘルプ(_H)"
+
+#~ msgid "1:4"
+#~ msgstr "1:4"
+
+#~ msgid "1:8"
+#~ msgstr "1:8"
+
+#~ msgid "1:16"
+#~ msgstr "1:16"
+
+#~ msgid "Script Properties"
+#~ msgstr "スクリプトのプロパティ"
+
+#~ msgid "Script"
+#~ msgstr "スクリプト"
+
+#, python-format
+#~ msgid ""
+#~ "XRandR failed:\n"
+#~ "%s"
+#~ msgstr ""
+#~ "XRandR 失敗:\n"
+#~ "%s"
+
+#~ msgid "Open Layout"
+#~ msgstr "レイアウトを開く"
+
+#~ msgid "Save Layout"
+#~ msgstr "レイアウトの保存"
+
+#~ msgid "ARandR Screen Layout Editor"
+#~ msgstr "ARandR スクリーンレイアウトエディター"
+
+#~ msgid "Another XRandR GUI"
+#~ msgstr "他の XRandR GUI"
+
+#~ msgid "Accelerator"
+#~ msgstr "アクセラレータ"
+
+#~ msgid "Action"
+#~ msgstr "動作"
+
+#~ msgid "disabled"
+#~ msgstr "無効"
+
+#~ msgid "New accelerator..."
+#~ msgstr "新しいアクセラレーター..."
+
+#~ msgid "no action"
+#~ msgstr "動作なし"
+
+#~ msgid "other application"
+#~ msgstr "その他のアプリケーション"
+
+#, python-format
+#~ msgid "No files in %(folder)r. Save a layout first."
+#~ msgstr "%(folder)r にファイルがありません。最初にレイアウトを保存します。"
+
+#~ msgid "gconf not available."
+#~ msgstr "gconf が存在しません。"
+
+#~ msgid ""
+#~ "In order to configure metacity, you need to have the python gconf module "
+#~ "installed."
+#~ msgstr ""
+#~ "metacity を設定するには、python gconf モジュールをインストールする必要があ"
+#~ "ります。"
+
+#~ msgid "Keybindings (via Metacity)"
+#~ msgstr "キーバインド (Metacity経由)"
+
+#~ msgid ""
+#~ "Click on a button in the left column and press a key combination you want "
+#~ "to bind to a certain screen layout. (Use backspace to clear accelerators, "
+#~ "escape to abort editing.) Then, select one or more layouts in the right "
+#~ "column.\n"
+#~ "\n"
+#~ "This will only work if you use metacity or another program reading its "
+#~ "configuration."
+#~ msgstr ""
+#~ "左側の列のボタンをクリックし、特定の画面レイアウトに割り当てたいキーの組み"
+#~ "合わせを押します(バックスペースを押すとアクセラレータがクリアされ、エス"
+#~ "ケープを押すと編集を中断します)。それから、右の列で1つまたは複数のレイアウ"
+#~ "トを選択してください。\n"
+#~ "\n"
+#~ "この機能は metacity またはその設定を読み込むその他のプログラムをご使用の場"
+#~ "合のみ機能します。"
+
+#~ msgid ""
+#~ "Your configuration does not include an active monitor. Do you want to "
+#~ "apply the configuration?"
+#~ msgstr ""
+#~ "あなたのコンフィグはアクティブなモニターを含んでいません。このコンフィグを"
+#~ "適用してよろしいですか？"
+
+#, python-format
+#~ msgid "Setting this resolution is not possible here: %s"
+#~ msgstr "この解像度は可能ではありません: %s"
+
+#, python-format
+#~ msgid "This orientation is not possible here: %s"
+#~ msgstr "この向きは可能ではありません: %s"
+
+#~ msgid "A part of an output is outside the virtual screen."
+#~ msgstr "出力位置の一部が仮想スクリーンからはみ出しています。"
+
+#~ msgid "An output is outside the virtual screen."
+#~ msgstr "出力位置が仮想スクリーンからはみ出しています。"
