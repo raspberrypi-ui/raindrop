@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ============================================================================*/
 
 #include <locale.h>
+#include <math.h>
 #include <sys/stat.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
@@ -41,6 +42,9 @@ extern wm_functions_t wayfire_functions;
 /*----------------------------------------------------------------------------*/
 
 #define SNAP_DISTANCE 200
+
+#define TEXTURE_W 4096
+#define TEXTURE_H 4096
 
 #define SCALE(n) ((n) / scale)
 #define UPSCALE(n) ((n) * scale)
@@ -295,7 +299,7 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
             cairo_rel_move_to (cr, w / 2, h);
             pango_font_description_set_size (font, charwid * PANGO_SCALE / 3);
             layout = pango_cairo_create_layout (cr);
-            buf = g_strdup_printf ("(x%0.1f)", mons[m].scale);
+            buf = g_strdup_printf ("(x%0.2f)", mons[m].scale);
             pango_layout_set_text (layout, buf, -1);
             pango_layout_set_font_description (layout, font);
             pango_layout_get_pixel_size (layout, &w, &h);
@@ -348,6 +352,7 @@ static void set_resolution (GtkMenuItem *item, gpointer data)
         mons[mon].height = h;
         mons[mon].interlaced = i;
         check_frequency (mon);
+        mons[mon].scale = 1.0;
     }
     gtk_widget_queue_draw (da);
 }
@@ -405,12 +410,25 @@ static void set_scaling (GtkMenuItem *item, gpointer data)
 
 static void add_scaling (GtkWidget *menu, long mon, float scaling)
 {
-    char *tag = g_strdup_printf ("%0.1f", scaling);
+    float multiplier;
+    int wtest, htest;
+
+    char *tag = g_strdup_printf ("%0.2f", scaling);
     GtkWidget *item = gtk_check_menu_item_new_with_label (tag);
     gtk_widget_set_name (item, tag);
     g_free (tag);
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].scale == scaling);
-    g_signal_connect (item, "activate", G_CALLBACK (set_scaling), (gpointer) mon);
+
+    multiplier = ceil (scaling) / scaling;
+    wtest = mons[mon].width * multiplier;
+    htest = mons[mon].height * multiplier;
+    if (wtest > TEXTURE_W || htest > TEXTURE_H)
+    {
+        gtk_widget_set_sensitive (item, FALSE);
+        gtk_widget_set_tooltip_text (item, _("Fractional scalings cannot be used at this resolution"));
+    }
+    else g_signal_connect (item, "activate", G_CALLBACK (set_scaling), (gpointer) mon);
+
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
 
@@ -577,9 +595,14 @@ static GtkWidget *create_menu (long mon)
     if (wm != WM_OPENBOX)
     {
         smenu = gtk_menu_new ();
+        add_scaling (smenu, mon, 0.5);
+        add_scaling (smenu, mon, 0.75);
         add_scaling (smenu, mon, 1.0);
+        add_scaling (smenu, mon, 1.25);
         add_scaling (smenu, mon, 1.5);
+        add_scaling (smenu, mon, 1.75);
         add_scaling (smenu, mon, 2.0);
+        add_scaling (smenu, mon, 2.5);
         item = gtk_menu_item_new_with_label (_("Scaling"));
         gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), smenu);
         gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
