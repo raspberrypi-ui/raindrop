@@ -1,3 +1,9 @@
+raindrop (1.5) trixie; urgency=medium
+
+  * Add readme; purge build directory from source archive
+
+ -- Simon Long <simon@raspberrypi.com>  Tue, 14 Oct 2025 11:42:31 +0100
+
 raindrop (1.4) trixie; urgency=medium
 
   * Save zoom; update Japanese translation
