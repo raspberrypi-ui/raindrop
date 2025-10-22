@@ -299,7 +299,7 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
             cairo_rel_move_to (cr, w / 2, h);
             pango_font_description_set_size (font, charwid * PANGO_SCALE / 3);
             layout = pango_cairo_create_layout (cr);
-            buf = g_strdup_printf ("(x%0.2f)", mons[m].scale);
+            buf = g_strdup_printf ("(x%0.1f)", mons[m].scale);
             pango_layout_set_text (layout, buf, -1);
             pango_layout_set_font_description (layout, font);
             pango_layout_get_pixel_size (layout, &w, &h);
@@ -413,7 +413,7 @@ static void add_scaling (GtkWidget *menu, long mon, float scaling)
     float multiplier;
     int wtest, htest;
 
-    char *tag = g_strdup_printf ("%0.2f", scaling);
+    char *tag = g_strdup_printf ("%0.1f", scaling);
     GtkWidget *item = gtk_check_menu_item_new_with_label (tag);
     gtk_widget_set_name (item, tag);
     g_free (tag);
@@ -595,14 +595,10 @@ static GtkWidget *create_menu (long mon)
     if (wm != WM_OPENBOX)
     {
         smenu = gtk_menu_new ();
-        add_scaling (smenu, mon, 0.5);
-        add_scaling (smenu, mon, 0.75);
         add_scaling (smenu, mon, 1.0);
-        add_scaling (smenu, mon, 1.25);
         add_scaling (smenu, mon, 1.5);
-        add_scaling (smenu, mon, 1.75);
         add_scaling (smenu, mon, 2.0);
-        add_scaling (smenu, mon, 2.5);
+        add_scaling (smenu, mon, 3.0);
         item = gtk_menu_item_new_with_label (_("Scaling"));
         gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), smenu);
         gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);

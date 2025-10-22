@@ -1,3 +1,9 @@
+raindrop (1.6) trixie; urgency=medium
+
+  * Add scaling
+
+ -- Simon Long <simon@raspberrypi.com>  Wed, 22 Oct 2025 10:06:04 +0100
+
 raindrop (1.5) trixie; urgency=medium
 
   * Add readme; purge build directory from source archive
