@@ -1,3 +1,9 @@
+raindrop (1.9) trixie; urgency=medium
+
+  * Restart pcmanfm if scaling is changed
+
+ -- Simon Long <simon@raspberrypi.com>  Wed, 05 Nov 2025 08:40:01 +0000
+
 raindrop (1.8) trixie; urgency=medium
 
   * Add scaling
