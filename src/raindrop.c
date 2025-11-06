@@ -299,7 +299,7 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
             cairo_rel_move_to (cr, w / 2, h);
             pango_font_description_set_size (font, charwid * PANGO_SCALE / 3);
             layout = pango_cairo_create_layout (cr);
-            buf = g_strdup_printf ("(x%0.1f)", mons[m].scale);
+            buf = g_strdup_printf ("(x %0.1f)", mons[m].scale);
             pango_layout_set_text (layout, buf, -1);
             pango_layout_set_font_description (layout, font);
             pango_layout_get_pixel_size (layout, &w, &h);
@@ -404,7 +404,7 @@ static void add_orientation (GtkWidget *menu, long mon, const char *orient, int 
 static void set_scaling (GtkMenuItem *item, gpointer data)
 {
     int mon = (long) data;
-    sscanf (gtk_widget_get_name (GTK_WIDGET (item)), "%f", &(mons[mon].scale));
+    sscanf (gtk_widget_get_name (GTK_WIDGET (item)), "x %f", &(mons[mon].scale));
     gtk_widget_queue_draw (da);
 }
 
@@ -413,7 +413,7 @@ static void add_scaling (GtkWidget *menu, long mon, float scaling)
     float multiplier;
     int wtest, htest;
 
-    char *tag = g_strdup_printf ("%0.1f", scaling);
+    char *tag = g_strdup_printf ("x %0.1f", scaling);
     GtkWidget *item = gtk_check_menu_item_new_with_label (tag);
     gtk_widget_set_name (item, tag);
     g_free (tag);

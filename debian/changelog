@@ -1,3 +1,9 @@
+raindrop (1.11) trixie; urgency=medium
+
+  * Show multiply signs in scaling menu
+
+ -- Simon Long <simon@raspberrypi.com>  Thu, 06 Nov 2025 18:34:59 +0000
+
 raindrop (1.10) trixie; urgency=medium
 
   * Remove pcmanfm restart - now handled on-the-fly
