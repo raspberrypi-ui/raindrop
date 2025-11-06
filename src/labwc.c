@@ -36,7 +36,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*----------------------------------------------------------------------------*/
 
 const char *orients[4] = { "normal", "90", "180", "270" };
-int scale_cs = 0;
 
 /*----------------------------------------------------------------------------*/
 /* Function prototypes */
@@ -179,12 +178,6 @@ void load_labwc_config (void)
         pclose (fp);
     }
 
-    for (mon = 0; mon < MAX_MONS; mon++)
-    {
-        if (mons[mon].modes == NULL) continue;
-        scale_cs += (mon + 1) * mons[mon].scale;
-    }
-
     setlocale (LC_NUMERIC, loc);
     g_free (loc);
 }
@@ -316,18 +309,7 @@ void save_labwc_config (void)
 
 void reload_labwc_config (void)
 {
-    int m, cs = 0;
-
     system ("pkill --signal SIGHUP kanshi");
-    if (scale_cs)
-    {
-        for (m = 0; m < MAX_MONS; m++)
-        {
-            if (mons[m].modes == NULL) continue;
-            cs += (m + 1) * mons[m].scale;
-        }
-        if (cs != scale_cs) system ("pkill pcmanfm");
-    }
 }
 
 void revert_labwc_config (void)
