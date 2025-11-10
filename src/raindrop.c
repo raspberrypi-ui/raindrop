@@ -134,14 +134,14 @@ static void close_prog (GtkWidget *, GdkEvent *, gpointer);
 
 static int screen_w (monitor_t mon)
 {
-    if (mon.rotation == 90 || mon.rotation == 270) return mon.height;
-    else return mon.width;
+    if (mon.rotation == 90 || mon.rotation == 270) return mon.height / mon.scale;
+    else return mon.width / mon.scale;
 }
 
 static int screen_h (monitor_t mon)
 {
-    if (mon.rotation == 90 || mon.rotation == 270) return mon.width;
-    else return mon.height;
+    if (mon.rotation == 90 || mon.rotation == 270) return mon.width / mon.scale;
+    else return mon.height / mon.scale;
 }
 
 static void copy_config (monitor_t *from, monitor_t *to)
@@ -281,7 +281,7 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
         // text label
         cairo_save (cr);
         font = pango_font_description_from_string ("sans");
-        charwid = SCALE (mons[m].width) / strlen (mons[m].name);
+        charwid = SCALE (mons[m].width / mons[m].scale) / strlen (mons[m].name);
 
         pango_font_description_set_size (font, charwid * PANGO_SCALE);
         layout = pango_cairo_create_layout (cr);
