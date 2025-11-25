@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ============================================================================*/
 
 #include <locale.h>
+#include <math.h>
 #include <sys/stat.h>
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
@@ -41,6 +42,9 @@ extern wm_functions_t wayfire_functions;
 /*----------------------------------------------------------------------------*/
 
 #define SNAP_DISTANCE 200
+
+#define TEXTURE_W 4096
+#define TEXTURE_H 4096
 
 #define SCALE(n) ((n) / scale)
 #define UPSCALE(n) ((n) * scale)
@@ -84,6 +88,8 @@ static void set_frequency (GtkMenuItem *item, gpointer data);
 static void add_frequency (GtkWidget *menu, long mon, float freq);
 static void set_orientation (GtkMenuItem *item, gpointer data);
 static void add_orientation (GtkWidget *menu, long mon, const char *orient, int rotation);
+static void set_scaling (GtkMenuItem *item, gpointer data);
+static void add_scaling (GtkWidget *menu, long mon, float scaling);
 static void set_enable (GtkCheckMenuItem *item, gpointer data);
 static void set_touchscreen (GtkMenuItem *item, gpointer data);
 static void set_brightness (GtkMenuItem *item, gpointer data);
@@ -128,14 +134,14 @@ static void close_prog (GtkWidget *, GdkEvent *, gpointer);
 
 static int screen_w (monitor_t mon)
 {
-    if (mon.rotation == 90 || mon.rotation == 270) return mon.height;
-    else return mon.width;
+    if (mon.rotation == 90 || mon.rotation == 270) return mon.height / mon.scale;
+    else return mon.width / mon.scale;
 }
 
 static int screen_h (monitor_t mon)
 {
-    if (mon.rotation == 90 || mon.rotation == 270) return mon.width;
-    else return mon.height;
+    if (mon.rotation == 90 || mon.rotation == 270) return mon.width / mon.scale;
+    else return mon.height / mon.scale;
 }
 
 static void copy_config (monitor_t *from, monitor_t *to)
@@ -153,6 +159,7 @@ static void copy_config (monitor_t *from, monitor_t *to)
         to[m].freq = from[m].freq;
         to[m].interlaced = from[m].interlaced;
         to[m].primary = from[m].primary;
+        to[m].scale = from[m].scale;
         if (to[m].touchscreen) g_free (to[m].touchscreen);
         if (from[m].touchscreen) to[m].touchscreen = g_strdup (from[m].touchscreen);
     }
@@ -173,6 +180,7 @@ static gboolean compare_config (monitor_t *from, monitor_t *to)
         if (to[m].freq != from[m].freq) return FALSE;
         if (to[m].interlaced != from[m].interlaced) return FALSE;
         if (to[m].primary != from[m].primary) return FALSE;
+        if (to[m].scale != from[m].scale) return FALSE;
         if (g_strcmp0 (to[m].touchscreen, from[m].touchscreen)) return FALSE;
     }
     return TRUE;
@@ -203,6 +211,7 @@ static void clear_config (gboolean first)
         mons[m].touchscreen = NULL;
         mons[m].backlight = NULL;
         mons[m].primary = FALSE;
+        mons[m].scale = 1.0;
         mons[m].tmode = MODE_NONE;
     }
 }
@@ -241,6 +250,7 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
     PangoLayout *layout;
     PangoFontDescription *font;
     int m, w, h, charwid;
+    char *buf;
 
     GdkRGBA bg = { 0.25, 0.25, 0.25, 1.0 };
     GdkRGBA fg = { 1.0, 1.0, 1.0, 0.75 };
@@ -271,7 +281,8 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
         // text label
         cairo_save (cr);
         font = pango_font_description_from_string ("sans");
-        charwid = SCALE (mons[m].width) / strlen (mons[m].name);
+        charwid = SCALE (mons[m].width / mons[m].scale) / strlen (mons[m].name);
+
         pango_font_description_set_size (font, charwid * PANGO_SCALE);
         layout = pango_cairo_create_layout (cr);
         pango_layout_set_text (layout, mons[m].name, -1);
@@ -282,6 +293,22 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
         cairo_rel_move_to (cr, -w / 2, -h / 2);
         pango_cairo_show_layout (cr, layout);
         g_object_unref (layout);
+
+        if (mons[m].scale != 1.0)
+        {
+            cairo_rel_move_to (cr, w / 2, h);
+            pango_font_description_set_size (font, charwid * PANGO_SCALE / 3);
+            layout = pango_cairo_create_layout (cr);
+            buf = g_strdup_printf ("(x %0.1f)", mons[m].scale);
+            pango_layout_set_text (layout, buf, -1);
+            pango_layout_set_font_description (layout, font);
+            pango_layout_get_pixel_size (layout, &w, &h);
+            cairo_rel_move_to (cr, -w / 2, - h / 2);
+            pango_cairo_show_layout (cr, layout);
+            g_free (buf);
+            g_object_unref (layout);
+        }
+
         pango_font_description_free (font);
         cairo_restore (cr);
     }
@@ -325,6 +352,7 @@ static void set_resolution (GtkMenuItem *item, gpointer data)
         mons[mon].height = h;
         mons[mon].interlaced = i;
         check_frequency (mon);
+        mons[mon].scale = 1.0;
     }
     gtk_widget_queue_draw (da);
 }
@@ -370,6 +398,37 @@ static void add_orientation (GtkWidget *menu, long mon, const char *orient, int 
     g_free (tag);
     gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].rotation == rotation);
     g_signal_connect (item, "activate", G_CALLBACK (set_orientation), (gpointer) mon);
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+}
+
+static void set_scaling (GtkMenuItem *item, gpointer data)
+{
+    int mon = (long) data;
+    sscanf (gtk_widget_get_name (GTK_WIDGET (item)), "x %f", &(mons[mon].scale));
+    gtk_widget_queue_draw (da);
+}
+
+static void add_scaling (GtkWidget *menu, long mon, float scaling)
+{
+    float multiplier;
+    int wtest, htest;
+
+    char *tag = g_strdup_printf ("x %0.1f", scaling);
+    GtkWidget *item = gtk_check_menu_item_new_with_label (tag);
+    gtk_widget_set_name (item, tag);
+    g_free (tag);
+    gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM (item), mons[mon].scale == scaling);
+
+    multiplier = ceil (scaling) / scaling;
+    wtest = mons[mon].width * multiplier;
+    htest = mons[mon].height * multiplier;
+    if (wtest > TEXTURE_W || htest > TEXTURE_H)
+    {
+        gtk_widget_set_sensitive (item, FALSE);
+        gtk_widget_set_tooltip_text (item, _("Fractional scalings cannot be used at this resolution"));
+    }
+    else g_signal_connect (item, "activate", G_CALLBACK (set_scaling), (gpointer) mon);
+
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 }
 
@@ -456,7 +515,7 @@ static void set_mode_mt (GtkCheckMenuItem *item, gpointer data)
 static GtkWidget *create_menu (long mon)
 {
     GList *model;
-    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu, *tmenu, *tmmenu, *bmenu;
+    GtkWidget *item, *menu, *rmenu, *fmenu, *omenu, *tmenu, *tmmenu, *bmenu, *smenu;
     int lastw, lasth, level;
     float lastf;
     output_mode_t *mode;
@@ -532,6 +591,18 @@ static GtkWidget *create_menu (long mon)
     item = gtk_menu_item_new_with_label (_("Orientation"));
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), omenu);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+
+    if (wm != WM_OPENBOX)
+    {
+        smenu = gtk_menu_new ();
+        add_scaling (smenu, mon, 1.0);
+        add_scaling (smenu, mon, 1.5);
+        add_scaling (smenu, mon, 2.0);
+        add_scaling (smenu, mon, 3.0);
+        item = gtk_menu_item_new_with_label (_("Scaling"));
+        gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), smenu);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    }
 
     if (touchscreens)
     {

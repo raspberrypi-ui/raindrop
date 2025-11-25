@@ -1,3 +1,33 @@
+raindrop (1.12) trixie; urgency=medium
+
+  * Modify displayed dimensions of scaled screens
+
+ -- Simon Long <simon@raspberrypi.com>  Mon, 10 Nov 2025 11:40:05 +0000
+
+raindrop (1.11) trixie; urgency=medium
+
+  * Show multiply signs in scaling menu
+
+ -- Simon Long <simon@raspberrypi.com>  Thu, 06 Nov 2025 18:34:59 +0000
+
+raindrop (1.10) trixie; urgency=medium
+
+  * Remove pcmanfm restart - now handled on-the-fly
+
+ -- Simon Long <simon@raspberrypi.com>  Thu, 06 Nov 2025 14:17:46 +0000
+
+raindrop (1.9) trixie; urgency=medium
+
+  * Restart pcmanfm if scaling is changed
+
+ -- Simon Long <simon@raspberrypi.com>  Wed, 05 Nov 2025 08:40:01 +0000
+
+raindrop (1.8) trixie; urgency=medium
+
+  * Add scaling
+
+ -- Simon Long <simon@raspberrypi.com>  Wed, 29 Oct 2025 07:18:46 +0000
+
 raindrop (1.7) trixie; urgency=medium
 
   * Add window handle to init function

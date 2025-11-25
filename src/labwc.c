@@ -155,6 +155,11 @@ void load_labwc_config (void)
                     if (strstr (line, "no")) mons[mon].enabled = FALSE;
                     else mons[mon].enabled = TRUE;
                 }
+                else if (strstr (line, "Scale"))
+                {
+                    sscanf (line, "  Scale: %f", &f);
+                    mons[mon].scale = f;
+                }
             }
             else if (line[4] != ' ')
             {
@@ -246,14 +251,14 @@ static int write_config (FILE *fp)
         }
         else if (mons[m].freq == 0.0)
         {
-            fprintf (fp, "\t\toutput %s enable mode --custom %dx%d position %d,%d transform %s\n",
-                mons[m].name, mons[m].width, mons[m].height,
+            fprintf (fp, "\t\toutput %s enable scale %f mode --custom %dx%d position %d,%d transform %s\n",
+                mons[m].name, mons[m].scale, mons[m].width, mons[m].height,
                 mons[m].x, mons[m].y, orients[mons[m].rotation / 90]);
         }
         else
         {
-            fprintf (fp, "\t\toutput %s enable mode %dx%d@%.3f position %d,%d transform %s\n",
-                mons[m].name, mons[m].width, mons[m].height, mons[m].freq,
+            fprintf (fp, "\t\toutput %s enable scale %f mode %dx%d@%.3f position %d,%d transform %s\n",
+                mons[m].name, mons[m].scale, mons[m].width, mons[m].height, mons[m].freq,
                 mons[m].x, mons[m].y, orients[mons[m].rotation / 90]);
         }
     }
