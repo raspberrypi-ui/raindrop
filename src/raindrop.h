@@ -79,6 +79,7 @@ typedef struct {
 } monitor_t;
 
 typedef struct {
+    void (*init_config) (void);
     void (*load_config) (void);
     void (*load_touchscreens) (void);
     void (*save_config) (void);

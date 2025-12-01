@@ -48,6 +48,7 @@ static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
 static int write_config (FILE *fp);
 static void merge_configs (const char *infile, const char *outfile);
 void save_labwc_config (void);
+void init_labwc_config (void);
 void reload_labwc_config (void);
 void revert_labwc_config (void);
 static void read_touchscreen_xml (char *filename);
@@ -287,20 +288,62 @@ static void merge_configs (const char *infile, const char *outfile)
 
 void save_labwc_config (void)
 {
-    char *infile, *outfile, *cmd;
-
-    char *dir = g_build_filename (g_get_user_config_dir (), "kanshi/", NULL);
-    g_mkdir_with_parents (dir, S_IRUSR | S_IWUSR | S_IXUSR);
-    g_free (dir);
+    char *infile, *outfile, *inifile, *cmd;
 
     infile = g_build_filename (g_get_user_config_dir (), "kanshi/config.bak", NULL);
     outfile = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
-    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
-    system (cmd);
+
+    // check if a valid config file exists
+    cmd = g_strdup_printf ("grep -q profile %s", outfile);
+    if (!system (cmd))
+    {
+        // config file - initialise bak from it
+        g_free (cmd);
+        cmd = g_strdup_printf ("cp %s %s", outfile, infile);
+        system (cmd);
+    }
+    else
+    {
+        // null config file - initialise bak from ini file
+        g_free (cmd);
+        inifile = g_build_filename (g_get_user_config_dir (), "kanshi/config.init", NULL);
+        cmd = g_strdup_printf ("cp %s %s", inifile, infile);
+        system (cmd);
+    }
     g_free (cmd);
+
     merge_configs (infile, outfile);
     g_free (infile);
     g_free (outfile);
+}
+
+void init_labwc_config (void)
+{
+    FILE *fp;
+    char *file, *cmd;
+
+    // check the config directory exists
+    file = g_build_filename (g_get_user_config_dir (), "kanshi/", NULL);
+    g_mkdir_with_parents (file, S_IRUSR | S_IWUSR | S_IXUSR);
+    g_free (file);
+
+    // look for an existing valid config file - if there is one, fall out
+    file = g_build_filename (g_get_user_config_dir (), "kanshi/config", NULL);
+    cmd = g_strdup_printf ("grep -q profile %s", file);
+    g_free (file);
+    if (!system (cmd))
+    {
+        g_free (cmd);
+        return;
+    }
+    g_free (cmd);
+
+    // no valid config file - create an init file
+    file = g_build_filename (g_get_user_config_dir (), "kanshi/config.init", NULL);
+    fp = fopen (file, "w");
+    write_config (fp);
+    fclose (fp);
+    g_free (file);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -539,6 +582,7 @@ void revert_labwc_touchscreens (void)
 /*----------------------------------------------------------------------------*/
 
 wm_functions_t labwc_functions = {
+    .init_config = init_labwc_config,
     .load_config = load_labwc_config,
     .load_touchscreens = load_labwc_touchscreens,
     .save_config = save_labwc_config,

@@ -1210,7 +1210,7 @@ static void init_config (void)
     wm_fn.load_touchscreens ();
 
     // ensure the config file reflects the current state, or undo won't work...
-    wm_fn.save_config ();
+    wm_fn.init_config ();
 
     curmon = -1;
     da = (GtkWidget *) gtk_builder_get_object (builder, "da");
