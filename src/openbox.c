@@ -44,6 +44,7 @@ static void add_mode_i (int monitor, int w, int h, float f, gboolean i);
 void load_openbox_config (void);
 static void write_dispsetup (const char *infile);
 void save_openbox_config (void);
+void init_openbox_config (void);
 void reload_openbox_config (void);
 void revert_openbox_config (void);
 void load_openbox_touchscreens (void);
@@ -223,6 +224,12 @@ void save_openbox_config (void)
     write_dispsetup (outfile);
 }
 
+void init_openbox_config (void)
+{
+    const char *outfile = "/var/tmp/dispsetup.sh";
+    write_dispsetup (outfile);
+}
+
 /*----------------------------------------------------------------------------*/
 /* Reload / reversion */
 /*----------------------------------------------------------------------------*/
@@ -325,6 +332,7 @@ void noop (void) {};
 /*----------------------------------------------------------------------------*/
 
 wm_functions_t openbox_functions = {
+    .init_config = init_openbox_config,
     .load_config = load_openbox_config,
     .load_touchscreens = load_openbox_touchscreens,
     .save_config = save_openbox_config,
