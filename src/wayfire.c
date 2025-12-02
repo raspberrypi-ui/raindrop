@@ -209,6 +209,7 @@ void load_wayfire_touchscreens (void)
 /*----------------------------------------------------------------------------*/
 
 wm_functions_t wayfire_functions = {
+    .init_config = save_wayfire_config,
     .load_config = load_labwc_config,
     .load_touchscreens = load_wayfire_touchscreens,
     .save_config = save_wayfire_config,

@@ -1,3 +1,9 @@
+raindrop (1.14) trixie; urgency=medium
+
+  * Stop writing kanshi file at startup
+
+ -- Simon Long <simon@raspberrypi.com>  Tue, 02 Dec 2025 11:50:00 +0000
+
 raindrop (1.13) trixie; urgency=medium
 
   * Added Portuguese translation
