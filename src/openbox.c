@@ -282,7 +282,7 @@ void load_openbox_touchscreens (void)
     ts = touchscreens;
     while (ts)
     {
-        cmd = g_strdup_printf ("xinput --list-props \"%s\" | grep Coordinate | cut -d : -f 2", (char *) ts->data);
+        cmd = g_strdup_printf ("xinput --list-props \"pointer:%s\" | grep Coordinate | cut -d : -f 2", (char *) ts->data);
         fp = popen (cmd, "r");
         if (fp)
         {

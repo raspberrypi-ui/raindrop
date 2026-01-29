@@ -1,3 +1,9 @@
+raindrop (1.15) trixie; urgency=medium
+
+  * Fix for new touchscreens under X
+
+ -- Simon Long <simon@raspberrypi.com>  Wed, 28 Jan 2026 15:05:17 +0000
+
 raindrop (1.14) trixie; urgency=medium
 
   * Stop writing kanshi file at startup
