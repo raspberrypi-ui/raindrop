@@ -7,8 +7,8 @@ msgstr ""
 "Project-Id-Version: arandr 0.1\n"
 "Report-Msgid-Bugs-To: chrysn@fsfe.org\n"
 "POT-Creation-Date: 2026-04-13 01:38+0200\n"
-"PO-Revision-Date: 2015-09-13 11:39+0200\n"
-"Last-Translator: agilob <weblate@agilob.net>\n"
+"PO-Revision-Date: 2026-04-13 19:26+0200\n"
+"Last-Translator: Skotniczny <skotniczny@outlook.com>\n"
 "Language-Team: Polish "
 "<https://hosted.weblate.org/projects/arandr/translations/pl/>\n"
 "Language: pl\n"
@@ -21,7 +21,7 @@ msgstr ""
 
 #: ../src/raindrop.c:428
 msgid "Fractional scalings cannot be used at this resolution"
-msgstr ""
+msgstr "Nie można użyć skalowania ułamkowego przy tej rozdzielczości"
 
 #: ../src/raindrop.c:527
 msgid "Active"
@@ -29,7 +29,7 @@ msgstr "Aktywny"
 
 #: ../src/raindrop.c:540
 msgid "Primary"
-msgstr "Pierwszy"
+msgstr "Główny"
 
 #: ../src/raindrop.c:574
 msgid "Resolution"
@@ -37,23 +37,23 @@ msgstr "Rozdzielczość"
 
 #: ../src/raindrop.c:580
 msgid "Frequency"
-msgstr ""
+msgstr "Częstotliwość"
 
 #: ../src/raindrop.c:587
 msgid "Normal"
-msgstr ""
+msgstr "Normalna"
 
 #: ../src/raindrop.c:588
 msgid "Left"
-msgstr ""
+msgstr "W lewo"
 
 #: ../src/raindrop.c:589
 msgid "Inverted"
-msgstr ""
+msgstr "Odwrócona"
 
 #: ../src/raindrop.c:590
 msgid "Right"
-msgstr ""
+msgstr "W prawo"
 
 #: ../src/raindrop.c:591
 msgid "Orientation"
@@ -61,27 +61,27 @@ msgstr "Orientacja"
 
 #: ../src/raindrop.c:602
 msgid "Scaling"
-msgstr ""
+msgstr "Skalowanie"
 
 #: ../src/raindrop.c:614
 msgid "Mouse Emulation"
-msgstr ""
+msgstr "Emulacja myszy"
 
 #: ../src/raindrop.c:619
 msgid "Multitouch"
-msgstr ""
+msgstr "Multitouch"
 
 #: ../src/raindrop.c:624
 msgid "Mode"
-msgstr ""
+msgstr "Tryb"
 
 #: ../src/raindrop.c:641
 msgid "Touchscreen"
-msgstr ""
+msgstr "Ekran dotykowy"
 
 #: ../src/raindrop.c:659
 msgid "Brightness"
-msgstr ""
+msgstr "Jasność"
 
 #: ../src/raindrop.c:708
 #, c-format
@@ -91,42 +91,45 @@ msgid ""
 "\n"
 "Reverting in %d seconds..."
 msgstr ""
+"Ekran zaktualizowany. Kliknij „OK” jeśli ustawienie jest prawidłowe lub "
+"„Anuluj” aby przywrócić poprzednie ustawienie.\n"
+"\n"
+"Przywracanie za %d sekund…"
 
 #: ../src/raindrop.c:1299
 msgctxt "tab"
 msgid "Screens"
-msgstr ""
+msgstr "Wyświetlacze"
 
 #. End of file
 #. ============================================================================
 #: ../data/raindrop.ui.h:1
-#, fuzzy
 msgid "Screen Configuration"
-msgstr "niezgodna konfiguracja"
+msgstr "Konfiguracja ekranu"
 
 #: ../data/raindrop.ui.h:2
 msgid "_Screens"
-msgstr ""
+msgstr "_Wyświetlacze"
 
 #: ../data/raindrop.ui.h:3
 msgid "_Identify"
-msgstr ""
+msgstr "_Identyfikuj"
 
 #: ../data/raindrop.ui.h:4
 msgid "_Close"
-msgstr ""
+msgstr "_Zamknij"
 
 #: ../data/raindrop.ui.h:5
 msgid "_Undo"
-msgstr ""
+msgstr "_Cofnij"
 
 #: ../data/raindrop.ui.h:6
 msgid "_Apply"
-msgstr ""
+msgstr "Z_astosuj"
 
 #: ../data/raindrop.ui.h:7
 msgid "_Cancel"
-msgstr ""
+msgstr "_Anuluj"
 
 #: ../data/raindrop.ui.h:8
 msgid "_OK"
