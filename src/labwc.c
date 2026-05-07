@@ -28,8 +28,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <locale.h>
 #include <gtk/gtk.h>
 #include <glib/gstdio.h>
-#include <libxml/xpath.h>
+#include <libxml/xpathInternals.h>
 #include "raindrop.h"
+
+#define XC(str) ((xmlChar *) str)
 
 /*----------------------------------------------------------------------------*/
 /* Global data */
@@ -375,10 +377,12 @@ void revert_labwc_config (void)
 static void read_touchscreen_xml (char *filename)
 {
     xmlDocPtr xDoc;
-    xmlNode *root_node, *child_node;
+    xmlXPathObjectPtr xpathObj;
+    xmlXPathContextPtr xpathCtx;
+    xmlNode *node;
     xmlAttr *attr;
     char *dev, *mon;
-    int m;
+    int i, m;
     touch_mode_t mode;
     GList *model;
     gboolean exists;
@@ -387,71 +391,78 @@ static void read_touchscreen_xml (char *filename)
 
     xmlInitParser ();
     LIBXML_TEST_VERSION
-
     xDoc = xmlParseFile (filename);
-    if (xDoc != NULL)
+    if (xDoc == NULL)
     {
-        root_node = xmlDocGetRootElement (xDoc);
-        for (child_node = root_node->children; child_node; child_node = child_node->next)
-        {
-            if (child_node->type != XML_ELEMENT_NODE) continue;
-            if (!g_strcmp0 ((char *) child_node->name, "touch"))
-            {
-                dev = NULL;
-                mon = NULL;
-                mode = MODE_MULTITOUCH;
-                for (attr = child_node->properties; attr; attr = attr->next)
-                {
-                    if (!g_strcmp0 ((char *) attr->name, "deviceName"))
-                        dev = g_strdup ((char *) attr->children->content);
-                    if (!g_strcmp0 ((char *) attr->name, "mapToOutput"))
-                        mon = g_strdup ((char *) attr->children->content);
-                    if (!g_strcmp0 ((char *) attr->name, "mouseEmulation"))
-                    {
-                        if (!g_strcmp0 ((char *) attr->children->content, "yes")) mode = MODE_MOUSEEMU;
-                        else mode = MODE_MULTITOUCH;
-                    }
-                }
-                if (dev && mon)
-                {
-                    exists = FALSE;
-                    model = touchscreens;
-                    while (model)
-                    {
-                        if (!g_strcmp0 ((char *) model->data, dev))
-                        {
-                            exists = TRUE;
-                            break;
-                        }
-                        model = model->next;
-                    }
-                    if (exists)
-                    {
-                        for (m = 0; m < MAX_MONS; m++)
-                        {
-                            if (mons[m].modes == NULL) continue;
-                            if (!g_strcmp0 (mons[m].name, mon))
-                            {
-                                mons[m].touchscreen = g_strdup (dev);
-                                mons[m].tmode = mode;
-                            }
-                            else if (!g_strcmp0 (dev, mons[m].touchscreen))
-                            {
-                                g_free (mons[m].touchscreen);
-                                mons[m].touchscreen = NULL;
-                                mons[m].tmode = MODE_NONE;
-                            }
-                        }
-                    }
-                }
-                g_free (dev);
-                g_free (mon);
-            }
-        }
-
-        xmlFreeDoc (xDoc);
+        xmlCleanupParser ();
+        return;
     }
 
+    xpathCtx = xmlXPathNewContext (xDoc);
+    xmlXPathRegisterNs (xpathCtx, XC ("o"), XC ("http://openbox.org/3.4/rc"));
+
+    xpathObj = xmlXPathEvalExpression (XC ("/o:openbox_config/o:touch"), xpathCtx);
+    if (!xmlXPathNodeSetIsEmpty (xpathObj->nodesetval))
+    {
+        for (i = 0; i < xpathObj->nodesetval->nodeNr; i++)
+        {
+            node = xpathObj->nodesetval->nodeTab[i];
+            dev = NULL;
+            mon = NULL;
+            mode = MODE_MULTITOUCH;
+            for (attr = node->properties; attr; attr = attr->next)
+            {
+                if (!g_strcmp0 ((char *) attr->name, "deviceName"))
+                    dev = g_strdup ((char *) attr->children->content);
+                if (!g_strcmp0 ((char *) attr->name, "mapToOutput"))
+                    mon = g_strdup ((char *) attr->children->content);
+                if (!g_strcmp0 ((char *) attr->name, "mouseEmulation"))
+                {
+                    if (!g_strcmp0 ((char *) attr->children->content, "yes")) mode = MODE_MOUSEEMU;
+                    else mode = MODE_MULTITOUCH;
+                }
+            }
+            if (dev && mon)
+            {
+                exists = FALSE;
+                model = touchscreens;
+                while (model)
+                {
+                    if (!g_strcmp0 ((char *) model->data, dev))
+                    {
+                        exists = TRUE;
+                        break;
+                    }
+                    model = model->next;
+                }
+                if (exists)
+                {
+                    for (m = 0; m < MAX_MONS; m++)
+                    {
+                        if (mons[m].modes == NULL) continue;
+                        if (!g_strcmp0 (mons[m].name, mon))
+                        {
+                            mons[m].touchscreen = g_strdup (dev);
+                            mons[m].tmode = mode;
+                        }
+                        else if (!g_strcmp0 (dev, mons[m].touchscreen))
+                        {
+                            g_free (mons[m].touchscreen);
+                            mons[m].touchscreen = NULL;
+                            mons[m].tmode = MODE_NONE;
+                        }
+                    }
+                }
+            }
+            g_free (dev);
+            g_free (mon);
+        }
+    }
+    xmlXPathFreeObject (xpathObj);
+
+    // cleanup XML
+    xmlXPathFreeContext (xpathCtx);
+    xmlFreeDoc (xDoc);
     xmlCleanupParser ();
 }
 
@@ -469,67 +480,57 @@ void load_labwc_touchscreens (void)
 static void write_touchscreens (char *filename)
 {
     xmlDocPtr xDoc;
-    xmlNode *root_node, *child_node;
-    xmlAttr *attr;
+    xmlNode *root, *child_node;
+    xmlXPathObjectPtr xpathObj;
+    xmlXPathContextPtr xpathCtx;
+    char *cptr;
     int m;
-    gboolean set;
 
     xmlInitParser ();
     LIBXML_TEST_VERSION
     if (g_file_test (filename, G_FILE_TEST_IS_REGULAR))
     {
         xDoc = xmlParseFile (filename);
-        if (!xDoc) xDoc = xmlNewDoc ((xmlChar *) "1.0");
+        if (!xDoc) xDoc = xmlNewDoc (XC ("1.0"));
     }
-    else xDoc = xmlNewDoc ((xmlChar *) "1.0");
+    else xDoc = xmlNewDoc (XC ("1.0"));
+    xpathCtx = xmlXPathNewContext (xDoc);
+    xmlXPathRegisterNs (xpathCtx, XC ("o"), XC ("http://openbox.org/3.4/rc"));
 
-    root_node = xmlDocGetRootElement (xDoc);
-    if (root_node == NULL)
+    // check the root node exists
+    xpathObj = xmlXPathEvalExpression (XC ("/o:openbox_config"), xpathCtx);
+    if (xmlXPathNodeSetIsEmpty (xpathObj->nodesetval))
     {
-        root_node = xmlNewNode (NULL, (xmlChar *) "openbox_config");
-        xmlDocSetRootElement (xDoc, root_node);
-        xmlNewNs (root_node, (xmlChar *) "http://openbox.org/3.4/rc", NULL);
+        root = xmlNewNode (NULL, XC ("openbox_config"));
+        xmlNewNs (root, XC ("http://openbox.org/3.4/rc"), NULL);
+        xmlDocSetRootElement (xDoc, root);
     }
+    else root = xpathObj->nodesetval->nodeTab[0];
+    xmlXPathFreeObject (xpathObj);
 
     for (m = 0; m < MAX_MONS; m++)
     {
         if (mons[m].modes == NULL) continue;
         if (mons[m].touchscreen == NULL) continue;
-        set = FALSE;
 
-        child_node = root_node->children;
-        while (child_node)
-        {
-            if (child_node->type == XML_ELEMENT_NODE)
-            {
-                if (!g_strcmp0 ((char *) child_node->name, "touch"))
-                {
-                    for (attr = child_node->properties; attr; attr = attr->next)
-                    {
-                        if (!g_strcmp0 ((char *) attr->name, "deviceName")
-                            && !g_strcmp0 ((char *) attr->children->content, mons[m].touchscreen))
-                        {
-                            xmlSetProp (child_node, (xmlChar *) "mapToOutput", (xmlChar *) mons[m].name);
-                            xmlSetProp (child_node, (xmlChar *) "mouseEmulation", mons[m].tmode == MODE_MOUSEEMU ? (xmlChar *) "yes" : (xmlChar *) "no");
-                            set = TRUE;
-                        }
-                    }
-                }
-            }
-            child_node = child_node->next;
-        }
+        cptr = g_strdup_printf ("/o:openbox_config/o:touch[@deviceName='%s']", mons[m].touchscreen);
+        xpathObj = xmlXPathEvalExpression (XC (cptr), xpathCtx);
+        g_free (cptr);
 
-        if (!set)
+        if (xmlXPathNodeSetIsEmpty (xpathObj->nodesetval))
         {
-            child_node = xmlNewNode (NULL, (xmlChar *) "touch");
-            xmlSetProp (child_node, (xmlChar *) "deviceName", (xmlChar *) mons[m].touchscreen);
-            xmlSetProp (child_node, (xmlChar *) "mapToOutput", (xmlChar *) mons[m].name);
-            xmlSetProp (child_node, (xmlChar *) "mouseEmulation", mons[m].tmode == MODE_MOUSEEMU ? (xmlChar *) "yes" : (xmlChar *) "no");
-            xmlAddChild (root_node, child_node);
+            child_node = xmlNewChild (root, NULL, XC ("touch"), NULL);
+            xmlSetProp (child_node, XC ("deviceName"), XC (mons[m].touchscreen));
         }
+        else child_node = xpathObj->nodesetval->nodeTab[0];
+
+        xmlSetProp (child_node, XC ("mapToOutput"), XC (mons[m].name));
+        xmlSetProp (child_node, XC ("mouseEmulation"), mons[m].tmode == MODE_MOUSEEMU ? XC ("yes") : XC ("no"));
+        xmlXPathFreeObject (xpathObj);
     }
 
-    xmlSaveFile (filename, xDoc);
+    xmlXPathFreeContext (xpathCtx);
+    xmlSaveFormatFile (filename, xDoc, 1);
     xmlFreeDoc (xDoc);
     xmlCleanupParser ();
 }
