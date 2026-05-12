@@ -1,3 +1,9 @@
+raindrop (1.16) trixie; urgency=medium
+
+  * Tidy libxml code
+
+ -- Simon Long <simon@raspberrypi.com>  Tue, 12 May 2026 09:03:30 +0100
+
 raindrop (1.15) trixie; urgency=medium
 
   * Fix for new touchscreens under X
