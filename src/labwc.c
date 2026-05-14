@@ -391,7 +391,7 @@ static void read_touchscreen_xml (char *filename)
 
     xmlInitParser ();
     LIBXML_TEST_VERSION
-    xDoc = xmlReadFile (filename, NULL, 0);
+    xDoc = xmlReadFile (filename, NULL, XML_PARSE_NOBLANKS);
     if (xDoc == NULL)
     {
         xmlCleanupParser ();
@@ -490,7 +490,7 @@ static void write_touchscreens (char *filename)
     LIBXML_TEST_VERSION
     if (g_file_test (filename, G_FILE_TEST_IS_REGULAR))
     {
-        xDoc = xmlReadFile (filename, NULL, 0);
+        xDoc = xmlReadFile (filename, NULL, XML_PARSE_NOBLANKS);
         if (!xDoc) xDoc = xmlNewDoc (XC ("1.0"));
     }
     else xDoc = xmlNewDoc (XC ("1.0"));
