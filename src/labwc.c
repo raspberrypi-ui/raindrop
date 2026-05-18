@@ -484,7 +484,7 @@ static void write_touchscreens (char *filename)
     xmlXPathObjectPtr xpathObj;
     xmlXPathContextPtr xpathCtx;
     char *cptr;
-    int m;
+    int m, i;
 
     xmlInitParser ();
     LIBXML_TEST_VERSION
@@ -507,6 +507,26 @@ static void write_touchscreens (char *filename)
     }
     else root = xpathObj->nodesetval->nodeTab[0];
     xmlXPathFreeObject (xpathObj);
+
+    // clear any existing associations for current monitors in the XML
+    for (m = 0; m < MAX_MONS; m++)
+    {
+        if (mons[m].modes == NULL) continue;
+
+        cptr = g_strdup_printf ("/o:openbox_config/o:touch[@mapToOutput='%s']", mons[m].name);
+        xpathObj = xmlXPathEvalExpression (XC (cptr), xpathCtx);
+        g_free (cptr);
+
+        if (xpathObj->nodesetval)
+        {
+            for (i = 0; i < xpathObj->nodesetval->nodeNr; i++)
+            {
+                xmlUnlinkNode (xpathObj->nodesetval->nodeTab[i]);
+                xmlFreeNode (xpathObj->nodesetval->nodeTab[i]);
+            }
+        }
+        xmlXPathFreeObject (xpathObj);
+    }
 
     for (m = 0; m < MAX_MONS; m++)
     {
