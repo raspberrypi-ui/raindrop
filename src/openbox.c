@@ -331,7 +331,7 @@ void noop (void) {};
 /* Function table */
 /*----------------------------------------------------------------------------*/
 
-wm_functions_t openbox_functions = {
+wm_functions_t openbox_dfunctions = {
     .init_config = init_openbox_config,
     .load_config = load_openbox_config,
     .load_touchscreens = load_openbox_touchscreens,

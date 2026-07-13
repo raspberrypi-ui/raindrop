@@ -33,9 +33,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gtk-layer-shell/gtk-layer-shell.h>
 #include "raindrop.h"
 
-extern wm_functions_t labwc_functions;
-extern wm_functions_t openbox_functions;
-extern wm_functions_t wayfire_functions;
+extern wm_functions_t labwc_dfunctions;
+extern wm_functions_t openbox_dfunctions;
 
 /*----------------------------------------------------------------------------*/
 /* Typedefs and macros */
@@ -1262,21 +1261,13 @@ void init_plugin (GtkWidget *parent)
 
     if (getenv ("WAYLAND_DISPLAY"))
     {
-        if (getenv ("WAYFIRE_CONFIG_FILE"))
-        {
-            wm = WM_WAYFIRE;
-            wm_fn = wayfire_functions;
-        }
-        else
-        {
-            wm = WM_LABWC;
-            wm_fn = labwc_functions;
-        }
+        wm = WM_LABWC;
+        wm_fn = labwc_dfunctions;
     }
     else
     {
         wm = WM_OPENBOX;
-        wm_fn = openbox_functions;
+        wm_fn = openbox_dfunctions;
     }
 
     main_dlg = parent;
@@ -1366,21 +1357,13 @@ int main (int argc, char *argv[])
 
     if (getenv ("WAYLAND_DISPLAY"))
     {
-        if (getenv ("WAYFIRE_CONFIG_FILE"))
-        {
-            wm = WM_WAYFIRE;
-            wm_fn = wayfire_functions;
-        }
-        else
-        {
-            wm = WM_LABWC;
-            wm_fn = labwc_functions;
-        }
+        wm = WM_LABWC;
+        wm_fn = labwc_dfunctions;
     }
     else
     {
         wm = WM_OPENBOX;
-        wm_fn = openbox_functions;
+        wm_fn = openbox_dfunctions;
     }
 
     gtk_init (&argc, &argv);

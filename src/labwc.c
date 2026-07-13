@@ -602,7 +602,7 @@ void revert_labwc_touchscreens (void)
 /* Function table */
 /*----------------------------------------------------------------------------*/
 
-wm_functions_t labwc_functions = {
+wm_functions_t labwc_dfunctions = {
     .init_config = init_labwc_config,
     .load_config = load_labwc_config,
     .load_touchscreens = load_labwc_touchscreens,
