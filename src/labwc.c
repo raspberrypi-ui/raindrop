@@ -53,6 +53,7 @@ void save_labwc_config (void);
 void init_labwc_config (void);
 void reload_labwc_config (void);
 void revert_labwc_config (void);
+static gboolean is_true (const xmlChar *val);
 static void read_touchscreen_xml (char *filename);
 void load_labwc_touchscreens (void);
 static void write_touchscreens (char *filename);
@@ -374,15 +375,26 @@ void revert_labwc_config (void)
 /* Touchscreens */
 /*----------------------------------------------------------------------------*/
 
+static gboolean is_true (const xmlChar *val)
+{
+    if (!xmlStrcmp (val, XC ("yes"))
+        || !xmlStrcmp (val, XC ("true"))
+        || !xmlStrcmp (val, XC ("on"))
+        || !xmlStrcmp (val, XC ("1")))
+        return TRUE;
+    else return FALSE;
+}
+
 static void read_touchscreen_xml (char *filename)
 {
     xmlDocPtr xDoc;
-    xmlXPathObjectPtr xpathObj;
+    xmlXPathObjectPtr xpathObj, xpathObj2;
     xmlXPathContextPtr xpathCtx;
     xmlNode *node;
     xmlAttr *attr;
+    xmlChar *cont;
     char *dev, *mon;
-    int i, m;
+    int i, j, m;
     touch_mode_t mode;
     GList *model;
     gboolean exists;
@@ -409,18 +421,42 @@ static void read_touchscreen_xml (char *filename)
             node = xpathObj->nodesetval->nodeTab[i];
             dev = NULL;
             mon = NULL;
-            mode = MODE_MULTITOUCH;
+            mode = MODE_NONE;
             for (attr = node->properties; attr; attr = attr->next)
             {
-                if (!g_strcmp0 ((char *) attr->name, "deviceName"))
-                    dev = g_strdup ((char *) attr->children->content);
-                if (!g_strcmp0 ((char *) attr->name, "mapToOutput"))
-                    mon = g_strdup ((char *) attr->children->content);
-                if (!g_strcmp0 ((char *) attr->name, "mouseEmulation"))
+                cont = attr->children->content;
+                if (!xmlStrcmp (attr->name, XC ("deviceName")))
+                    dev = g_strdup ((char *) cont);
+                if (!xmlStrcmp (attr->name, XC ("mapToOutput")))
+                    mon = g_strdup ((char *) cont);
+                if (!xmlStrcmp (attr->name, XC ("mouseEmulation")))
                 {
-                    if (!g_strcmp0 ((char *) attr->children->content, "yes")) mode = MODE_MOUSEEMU;
+                    if (is_true (cont)) mode = MODE_MOUSEEMU;
                     else mode = MODE_MULTITOUCH;
                 }
+
+                // check for subnodes just in case...
+                xpathObj2 = xmlXPathNodeEval (node, XC ("./o:*"), xpathCtx);
+                if (!xmlXPathNodeSetIsEmpty (xpathObj2->nodesetval))
+                {
+                    for (j = 0; j < xpathObj2->nodesetval->nodeNr; j++)
+                    {
+                        node = xpathObj2->nodesetval->nodeTab[j];
+                        cont = xmlNodeGetContent (node);
+                        if (dev == NULL && !xmlStrcmp (node->name, XC ("deviceName")))
+                            dev = g_strdup ((char *) cont);
+                        if (mon == NULL && !xmlStrcmp (node->name, XC ("mapToOutput")))
+                            mon = g_strdup ((char *) cont);
+                        if (mode == MODE_NONE && !xmlStrcmp (node->name, XC ("mouseEmulation")))
+                        {
+                            if (is_true (cont)) mode = MODE_MOUSEEMU;
+                            else mode = MODE_MULTITOUCH;
+                        }
+                    }
+                }
+                xmlXPathFreeObject (xpathObj2);
+
+                if (mode == MODE_NONE) mode = MODE_MULTITOUCH;
             }
             if (dev && mon)
             {
@@ -481,7 +517,7 @@ static void write_touchscreens (char *filename)
 {
     xmlDocPtr xDoc;
     xmlNode *root, *child_node;
-    xmlXPathObjectPtr xpathObj;
+    xmlXPathObjectPtr xpathObj, xpathObj2;
     xmlXPathContextPtr xpathCtx;
     char *cptr;
     int m, i;
@@ -526,6 +562,21 @@ static void write_touchscreens (char *filename)
             }
         }
         xmlXPathFreeObject (xpathObj);
+
+        // remove any nodes which have this output mapped in a subnode
+        xpathObj = xmlXPathEvalExpression (XC ("/o:openbox_config/o:touch/o:mapToOutput"), xpathCtx);
+        if (xpathObj->nodesetval)
+        {
+            for (i = 0; i < xpathObj->nodesetval->nodeNr; i++)
+            {
+                if (!xmlStrcmp (xmlNodeGetContent (xpathObj->nodesetval->nodeTab[i]), XC (mons[m].name)))
+                {
+                    xmlUnlinkNode (xpathObj->nodesetval->nodeTab[i]->parent);
+                    xmlFreeNode (xpathObj->nodesetval->nodeTab[i]->parent);
+                }
+            }
+        }
+        xmlXPathFreeObject (xpathObj);
     }
 
     for (m = 0; m < MAX_MONS; m++)
@@ -542,10 +593,40 @@ static void write_touchscreens (char *filename)
             child_node = xmlNewChild (root, NULL, XC ("touch"), NULL);
             xmlSetProp (child_node, XC ("deviceName"), XC (mons[m].touchscreen));
         }
-        else child_node = xpathObj->nodesetval->nodeTab[0];
+        else
+        {
+            child_node = xpathObj->nodesetval->nodeTab[0];
+
+            // delete any subnodes (from alternate format)
+            xpathObj2 = xmlXPathNodeEval (child_node, XC ("./o:*"), xpathCtx);
+            if (xpathObj2->nodesetval)
+            {
+                for (i = 0; i < xpathObj2->nodesetval->nodeNr; i++)
+                {
+                    xmlUnlinkNode (xpathObj2->nodesetval->nodeTab[i]);
+                    xmlFreeNode (xpathObj2->nodesetval->nodeTab[i]);
+                }
+            }
+            xmlXPathFreeObject (xpathObj2);
+        }
 
         xmlSetProp (child_node, XC ("mapToOutput"), XC (mons[m].name));
         xmlSetProp (child_node, XC ("mouseEmulation"), mons[m].tmode == MODE_MOUSEEMU ? XC ("yes") : XC ("no"));
+        xmlXPathFreeObject (xpathObj);
+
+        // remove any nodes which have this device mapped in a subnode
+        xpathObj = xmlXPathEvalExpression (XC ("/o:openbox_config/o:touch/o:deviceName"), xpathCtx);
+        if (xpathObj->nodesetval)
+        {
+            for (i = 0; i < xpathObj->nodesetval->nodeNr; i++)
+            {
+                if (!xmlStrcmp (xmlNodeGetContent (xpathObj->nodesetval->nodeTab[i]), XC (mons[m].touchscreen)))
+                {
+                    xmlUnlinkNode (xpathObj->nodesetval->nodeTab[i]->parent);
+                    xmlFreeNode (xpathObj->nodesetval->nodeTab[i]->parent);
+                }
+            }
+        }
         xmlXPathFreeObject (xpathObj);
     }
 
