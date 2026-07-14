@@ -1,3 +1,9 @@
+raindrop (1.17) trixie; urgency=medium
+
+  * Remove wayfire support; support alternate labwc XML
+
+ -- Simon Long <simon@raspberrypi.com>  Tue, 14 Jul 2026 08:39:36 +0100
+
 raindrop (1.16) trixie; urgency=medium
 
   * Tidy libxml code
