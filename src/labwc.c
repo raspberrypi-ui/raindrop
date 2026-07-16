@@ -434,30 +434,31 @@ static void read_touchscreen_xml (char *filename)
                     if (is_true (cont)) mode = MODE_MOUSEEMU;
                     else mode = MODE_MULTITOUCH;
                 }
+            }
 
-                // check for subnodes just in case...
-                xpathObj2 = xmlXPathNodeEval (node, XC ("./o:*"), xpathCtx);
-                if (!xmlXPathNodeSetIsEmpty (xpathObj2->nodesetval))
+            // check for subnodes just in case...
+            xpathObj2 = xmlXPathNodeEval (node, XC ("./o:*"), xpathCtx);
+            if (!xmlXPathNodeSetIsEmpty (xpathObj2->nodesetval))
+            {
+                for (j = 0; j < xpathObj2->nodesetval->nodeNr; j++)
                 {
-                    for (j = 0; j < xpathObj2->nodesetval->nodeNr; j++)
+                    node = xpathObj2->nodesetval->nodeTab[j];
+                    cont = xmlNodeGetContent (node);
+                    if (dev == NULL && !xmlStrcmp (node->name, XC ("deviceName")))
+                        dev = g_strdup ((char *) cont);
+                    if (mon == NULL && !xmlStrcmp (node->name, XC ("mapToOutput")))
+                        mon = g_strdup ((char *) cont);
+                    if (mode == MODE_NONE && !xmlStrcmp (node->name, XC ("mouseEmulation")))
                     {
-                        node = xpathObj2->nodesetval->nodeTab[j];
-                        cont = xmlNodeGetContent (node);
-                        if (dev == NULL && !xmlStrcmp (node->name, XC ("deviceName")))
-                            dev = g_strdup ((char *) cont);
-                        if (mon == NULL && !xmlStrcmp (node->name, XC ("mapToOutput")))
-                            mon = g_strdup ((char *) cont);
-                        if (mode == MODE_NONE && !xmlStrcmp (node->name, XC ("mouseEmulation")))
-                        {
-                            if (is_true (cont)) mode = MODE_MOUSEEMU;
-                            else mode = MODE_MULTITOUCH;
-                        }
+                        if (is_true (cont)) mode = MODE_MOUSEEMU;
+                        else mode = MODE_MULTITOUCH;
                     }
                 }
-                xmlXPathFreeObject (xpathObj2);
-
-                if (mode == MODE_NONE) mode = MODE_MULTITOUCH;
             }
+            xmlXPathFreeObject (xpathObj2);
+
+            if (mode == MODE_NONE) mode = MODE_MULTITOUCH;
+
             if (dev && mon)
             {
                 exists = FALSE;
