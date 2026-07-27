@@ -512,6 +512,9 @@ void load_labwc_touchscreens (void)
     infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
     read_touchscreen_xml (infile);
     g_free (infile);
+
+    // put this in here so the kanshi change settles - reloads after an apply or an undo
+    system ("wfpanelctl nmenu bg");
 }
 
 static void write_touchscreens (char *filename)
