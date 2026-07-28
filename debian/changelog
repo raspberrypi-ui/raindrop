@@ -1,3 +1,9 @@
+raindrop (1.18) trixie; urgency=medium
+
+  * Reload icon menu after changes
+
+ -- Simon Long <simon@raspberrypi.com>  Tue, 28 Jul 2026 13:01:23 +0100
+
 raindrop (1.17) trixie; urgency=medium
 
   * Remove wayfire support; support alternate labwc XML
