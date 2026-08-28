@@ -1,0 +1,136 @@
+# Georgian translation for rpcc_raindrop.
+# Copyright (C) 2026 rpcc_raindrop's authors.
+# This file is distributed under the same license as the rpcc_raindrop package.
+# Ekaterine Papava <papava.e@gtu.ge>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: rpcc_raindrop\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-27 15:31+0200\n"
+"PO-Revision-Date: 2026-08-20 10:05+0200\n"
+"Last-Translator: Ekaterine Papava <papava.e@gtu.ge>\n"
+"Language-Team: Georgian <(nothing)>\n"
+"Language: ka\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.9\n"
+
+#: src/raindrop.c:427
+msgid "Fractional scalings cannot be used at this resolution"
+msgstr "ნაწილობრივი მასშტაბის ამ გარჩევადობისას გამოყენება შეუძლებელია"
+
+#: src/raindrop.c:526
+msgid "Active"
+msgstr "აქტიური"
+
+#: src/raindrop.c:539
+msgid "Primary"
+msgstr "ძირითადი"
+
+#: src/raindrop.c:573
+msgid "Resolution"
+msgstr "გარჩევადობა"
+
+#: src/raindrop.c:579
+msgid "Frequency"
+msgstr "სიხშირე"
+
+#: src/raindrop.c:586
+msgid "Normal"
+msgstr "ნორმალური"
+
+#: src/raindrop.c:587
+msgid "Left"
+msgstr "გავიდა"
+
+#: src/raindrop.c:588
+msgid "Inverted"
+msgstr "შებრუნებულია"
+
+#: src/raindrop.c:589
+msgid "Right"
+msgstr "მარჯვენა"
+
+#: src/raindrop.c:590
+msgid "Orientation"
+msgstr "ორიენტაცია"
+
+#: src/raindrop.c:601
+msgid "Scaling"
+msgstr "მასშტაბი"
+
+#: src/raindrop.c:613
+msgid "Mouse Emulation"
+msgstr "თაგუნას ემულაცია"
+
+#: src/raindrop.c:618
+msgid "Multitouch"
+msgstr "მულტითაჩი"
+
+#: src/raindrop.c:623
+msgid "Mode"
+msgstr "რეჟიმი"
+
+#: src/raindrop.c:640
+msgid "Touchscreen"
+msgstr "სენსორული ეკრანი"
+
+#: src/raindrop.c:658
+msgid "Brightness"
+msgstr "სიკაშკაშე"
+
+#: src/raindrop.c:707
+#, c-format
+msgid ""
+"Screen updated. Click 'OK' if is this is correct, or 'Cancel' to revert to "
+"previous setting.\n"
+"\n"
+"Reverting in %d seconds..."
+msgstr ""
+"ეკრანი განახლდა. დააწკაპუნეთ ღილაკზე 'დიახ', თუ ეს სწორია, ან ღილაკზე "
+"'გაუქმება' წინა პარამეტრებზე დასაბრუნებლად.\n"
+"\n"
+"დაბრუნება %d წამში..."
+
+#: src/raindrop.c:1290
+msgctxt "tab"
+msgid "Screens"
+msgstr "ეკრანები"
+
+#: data/raindrop.ui:7 data/raindrop.ui:260 data/raindrop.desktop.in:3
+msgid "Screen Configuration"
+msgstr "ეკრანის მორგება"
+
+#: data/raindrop.ui:53
+msgid "_Screens"
+msgstr "ე_კრანები"
+
+#: data/raindrop.ui:88
+msgid "_Identify"
+msgstr "_იდენტიფიკაცია"
+
+#: data/raindrop.ui:104
+msgid "_Close"
+msgstr "და_ხურვა"
+
+#: data/raindrop.ui:118
+msgid "_Undo"
+msgstr "გა_უქმება"
+
+#: data/raindrop.ui:132
+msgid "_Apply"
+msgstr "გ_ადატარება"
+
+#: data/raindrop.ui:219
+msgid "_Cancel"
+msgstr "გაუ_ქმება"
+
+#: data/raindrop.ui:234
+msgid "_OK"
+msgstr "_დიახ"
+
+#: data/raindrop.desktop.in:4
+msgid "Configure monitor arrangement, scaling and orientation"
+msgstr "ეკრანების განლაგების, მასშტაბის და ორიენტაციის მორგება"
