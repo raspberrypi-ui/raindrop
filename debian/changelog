@@ -1,3 +1,9 @@
+raindrop (1.19) trixie; urgency=medium
+
+  * Add Georgian translation
+
+ -- Simon Long <simon@raspberrypi.com>  Wed, 02 Sep 2026 07:27:31 +0100
+
 raindrop (1.18) trixie; urgency=medium
 
   * Reload icon menu after changes
