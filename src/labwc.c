@@ -347,6 +347,11 @@ void init_labwc_config (void)
     write_config (fp);
     fclose (fp);
     g_free (file);
+
+    // make a local working copy of the current greeter touchscreen file
+    cmd = g_strdup_printf ("cp /etc/xdg/labwc-greeter/rc.xml %s/labwc/rcgreeter.xml", g_get_user_config_dir ());
+    system (cmd);
+    g_free (cmd);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -657,11 +662,13 @@ void save_labwc_touchscreens (void)
     g_free (infile);
     g_free (outfile);
 
+    infile = g_build_filename (g_get_user_config_dir (), "labwc/rcgreeter.bak", NULL);
     outfile = g_build_filename (g_get_user_config_dir (), "labwc/rcgreeter.xml", NULL);
-    cmd = g_strdup_printf ("cp /etc/xdg/labwc-greeter/rc.xml %s", outfile);
+    cmd = g_strdup_printf ("cp %s %s", outfile, infile);
     system (cmd);
     g_free (cmd);
     write_touchscreens (outfile);
+    g_free (infile);
     g_free (outfile);
 }
 
@@ -676,6 +683,14 @@ void revert_labwc_touchscreens (void)
 
     infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.bak", NULL);
     outfile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+    cmd = g_strdup_printf ("cp %s %s", infile, outfile);
+    system (cmd);
+    g_free (cmd);
+    g_free (infile);
+    g_free (outfile);
+
+    infile = g_build_filename (g_get_user_config_dir (), "labwc/rcgreeter.bak", NULL);
+    outfile = g_build_filename (g_get_user_config_dir (), "labwc/rcgreeter.xml", NULL);
     cmd = g_strdup_printf ("cp %s %s", infile, outfile);
     system (cmd);
     g_free (cmd);
