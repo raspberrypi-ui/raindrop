@@ -43,11 +43,12 @@ const char *orients[4] = { "normal", "90", "180", "270" };
 /* Function prototypes */
 /*----------------------------------------------------------------------------*/
 
+static unsigned long hash_str (char *str);
 void update_labwc_system_config (void);
 static void add_mode (int monitor, int w, int h, float f);
 void load_labwc_config (void);
-static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons);
-static int write_config (FILE *fp);
+static gboolean copy_profile (FILE *fp, FILE *foutp, unsigned long hash);
+static unsigned long write_config (FILE *fp);
 static void merge_configs (const char *infile, const char *outfile);
 void save_labwc_config (void);
 void init_labwc_config (void);
@@ -60,6 +61,20 @@ static void write_touchscreens (char *filename);
 void save_labwc_touchscreens (void);
 void reload_labwc_touchscreens (void);
 void revert_labwc_touchscreens (void);
+
+/*----------------------------------------------------------------------------*/
+/* Helpers */
+/*----------------------------------------------------------------------------*/
+
+static unsigned long hash_str (char *str)
+{
+    // djb2 string hash function by Dan Bernstein
+    unsigned long hash = 5381;
+    int c;
+
+    while (c = *str++) hash = ((hash << 5) + hash) + c;
+    return hash;
+}
 
 /*----------------------------------------------------------------------------*/
 /* System update */
@@ -190,13 +205,14 @@ void load_labwc_config (void)
 /* Writing config */
 /*----------------------------------------------------------------------------*/
 
-static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
+static gboolean copy_profile (FILE *fp, FILE *foutp, unsigned long hash)
 {
     char *line;
     size_t len;
     gboolean valid = FALSE;
     char *buf, *tmp;
     int m;
+    unsigned long h = 0;
 
     line = NULL;
     len = 0;
@@ -215,7 +231,8 @@ static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
                 g_free (buf);
                 buf = tmp;
 
-                if (nmons) fprintf (foutp, "%s\n", buf);
+                // only write if a profile's hash sum doesn't match that of the one already written
+                if (h != hash) fprintf (foutp, "%s\n", buf);
                 g_free (buf);
                 return TRUE;
             }
@@ -228,7 +245,7 @@ static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
                 for (m = 0; m < MAX_MONS; m++)
                 {
                     if (mons[m].modes == NULL) continue;
-                    if (strstr (line, mons[m].name)) nmons--;
+                    if (strstr (line, mons[m].name)) h += hash_str (mons[m].name);
                 }
             }
         }
@@ -237,9 +254,10 @@ static gboolean copy_profile (FILE *fp, FILE *foutp, int nmons)
     return FALSE;
 }
 
-static int write_config (FILE *fp)
+static unsigned long write_config (FILE *fp)
 {
-    int m, nmons = 0;
+    int m;
+    unsigned long hash = 0;
 
     char *loc = g_strdup (setlocale (LC_NUMERIC, ""));
     setlocale (LC_NUMERIC, "C");
@@ -248,7 +266,7 @@ static int write_config (FILE *fp)
     for (m = 0; m < MAX_MONS; m++)
     {
         if (mons[m].modes == NULL) continue;
-        nmons++;
+        hash += hash_str (mons[m].name);
         if (mons[m].enabled == FALSE)
         {
             fprintf (fp, "\t\toutput %s disable\n", mons[m].name);
@@ -271,7 +289,8 @@ static int write_config (FILE *fp)
     setlocale (LC_NUMERIC, loc);
     g_free (loc);
 
-    return nmons;
+    // return value is the sum of the hashes of each output name used in the profile
+    return hash;
 }
 
 static void merge_configs (const char *infile, const char *outfile)
@@ -280,10 +299,10 @@ static void merge_configs (const char *infile, const char *outfile)
     FILE *foutp = fopen (outfile, "w");
 
     // write the profile for this config
-    int nmons = write_config (foutp);
+    unsigned long hash = write_config (foutp);
 
-    // copy any other profiles
-    while (copy_profile (finp, foutp, nmons));
+    // copy any other profiles - use the hash of the profile written to exclude it
+    while (copy_profile (finp, foutp, hash));
 
     fclose (finp);
     fclose (foutp);
