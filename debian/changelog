@@ -1,3 +1,9 @@
+raindrop (1.20) trixie; urgency=medium
+
+  * Improvements to robustness of revert process
+
+ -- Simon Long <simon@raspberrypi.com>  Wed, 09 Sep 2026 09:22:48 +0100
+
 raindrop (1.19) trixie; urgency=medium
 
   * Add Georgian translation
