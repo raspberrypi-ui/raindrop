@@ -122,10 +122,6 @@ static void handle_ident (GtkButton *, gpointer);
 static void init_config (void);
 static void load_scale (void);
 static void save_scale (void);
-#ifndef PLUGIN_NAME
-static void handle_close (GtkButton *, gpointer);
-static void close_prog (GtkWidget *, GdkEvent *, gpointer);
-#endif
 
 /*----------------------------------------------------------------------------*/
 /* Helper functions */
@@ -1250,8 +1246,6 @@ static void init_config (void)
 /* Plugin interface */
 /*----------------------------------------------------------------------------*/
 
-#ifdef PLUGIN_NAME
-
 void init_plugin (GtkWidget *parent)
 {
     setlocale (LC_ALL, "");
@@ -1276,8 +1270,6 @@ void init_plugin (GtkWidget *parent)
     load_scale ();
 
     init_config ();
-
-    gtk_widget_hide (GTK_WIDGET (gtk_builder_get_object (builder, "btn_close")));
 }
 
 int plugin_tabs (void)
@@ -1304,7 +1296,7 @@ GtkWidget *get_tab (int tab)
 {
     GtkWidget *window, *plugin;
 
-    window = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
+    window = (GtkWidget *) gtk_builder_get_object (builder, "screens_window");
     plugin = (GtkWidget *) gtk_builder_get_object (builder, "raindrop_page");
 
     gtk_container_remove (GTK_CONTAINER (window), plugin);
@@ -1324,72 +1316,6 @@ void free_plugin (void)
 {
     g_object_unref (builder);
 }
-
-#else
-
-/*----------------------------------------------------------------------------*/
-/* Main window button handlers                                                */
-/*----------------------------------------------------------------------------*/
-
-static void handle_close (GtkButton *, gpointer)
-{
-    if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
-    gtk_main_quit ();
-}
-
-static void close_prog (GtkWidget *, GdkEvent *, gpointer)
-{
-    if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
-    gtk_main_quit ();
-}
-
-/*----------------------------------------------------------------------------*/
-/* Main function */
-/*----------------------------------------------------------------------------*/
-
-int main (int argc, char *argv[])
-{
-    setlocale (LC_ALL, "");
-    bindtextdomain (GETTEXT_PACKAGE, PACKAGE_LOCALE_DIR);
-    bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-    textdomain (GETTEXT_PACKAGE);
-
-    if (getenv ("WAYLAND_DISPLAY"))
-    {
-        wm = WM_LABWC;
-        wm_fn = labwc_dfunctions;
-    }
-    else
-    {
-        wm = WM_OPENBOX;
-        wm_fn = openbox_dfunctions;
-    }
-
-    gtk_init (&argc, &argv);
-
-    builder = gtk_builder_new_from_file (PACKAGE_DATA_DIR "/ui/raindrop.ui");
-
-    main_dlg = (GtkWidget *) gtk_builder_get_object (builder, "main_win");
-    g_signal_connect (main_dlg, "delete-event", G_CALLBACK (close_prog), NULL);
-
-    g_signal_connect (gtk_builder_get_object (builder, "btn_close"), "clicked", G_CALLBACK (handle_close), NULL);
-
-    gtk_window_set_default_size (GTK_WINDOW (main_dlg), 500, 400);
-
-    scale = 8;
-
-    init_config ();
-
-    g_object_unref (builder);
-
-    gtk_widget_show_all (main_dlg);
-
-    gtk_main ();
-
-    return 0;
-}
-
-#endif
 
 /* End of file */
 /*============================================================================*/

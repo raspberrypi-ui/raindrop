@@ -2,10 +2,7 @@
 <!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
-  <object class="GtkWindow" id="main_win">
-    <property name="can-focus">False</property>
-    <property name="title" translatable="yes">Screen Configuration</property>
-    <property name="icon-name">computer</property>
+  <object class="GtkWindow" id="screens_window">
     <child>
       <object class="GtkBox" id="raindrop_page">
         <property name="visible">True</property>
@@ -36,6 +33,7 @@
             <property name="can-focus">False</property>
             <property name="spacing">5</property>
             <property name="layout-style">end</property>
+            <property name="homogeneous">True</property>
             <child>
               <object class="GtkButton" id="btn_menu">
                 <property name="visible">True</property>
@@ -80,7 +78,6 @@
                 <property name="fill">True</property>
                 <property name="position">0</property>
                 <property name="secondary">True</property>
-                <property name="non-homogeneous">True</property>
               </packing>
             </child>
             <child>
@@ -96,21 +93,6 @@
                 <property name="fill">True</property>
                 <property name="position">1</property>
                 <property name="secondary">True</property>
-                <property name="non-homogeneous">True</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="btn_close">
-                <property name="label" translatable="yes">_Close</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="use-underline">True</property>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">4</property>
               </packing>
             </child>
             <child>
@@ -124,7 +106,7 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">5</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -138,7 +120,7 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
-                <property name="position">6</property>
+                <property name="position">3</property>
               </packing>
             </child>
           </object>
@@ -156,10 +138,60 @@
     <widgets>
       <widget name="btn_menu"/>
       <widget name="btn_ident"/>
-      <widget name="btn_close"/>
       <widget name="btn_undo"/>
       <widget name="btn_apply"/>
     </widgets>
+  </object>
+  <object class="GtkBox" id="zooms">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="halign">end</property>
+    <property name="valign">end</property>
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="GtkButton" id="btn_zin">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+        <property name="margin-end">5</property>
+        <property name="margin-bottom">5</property>
+        <property name="always-show-image">True</property>
+        <child>
+          <object class="GtkImage">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="pixbuf">plus.png</property>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkButton" id="btn_zout">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="receives-default">True</property>
+        <property name="margin-end">5</property>
+        <property name="margin-bottom">5</property>
+        <property name="always-show-image">True</property>
+        <child>
+          <object class="GtkImage">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="pixbuf">minus.png</property>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
   </object>
   <object class="GtkWindow" id="modal">
     <property name="name">pixbox</property>
@@ -262,57 +294,6 @@
           <placeholder/>
         </child>
       </object>
-    </child>
-  </object>
-  <object class="GtkBox" id="zooms">
-    <property name="visible">True</property>
-    <property name="can-focus">False</property>
-    <property name="halign">end</property>
-    <property name="valign">end</property>
-    <property name="orientation">vertical</property>
-    <child>
-      <object class="GtkButton" id="btn_zin">
-        <property name="visible">True</property>
-        <property name="can-focus">True</property>
-        <property name="receives-default">True</property>
-        <property name="margin-end">5</property>
-        <property name="margin-bottom">5</property>
-        <property name="always-show-image">True</property>
-        <child>
-          <object class="GtkImage">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="pixbuf">plus.png</property>
-          </object>
-        </child>
-      </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">0</property>
-      </packing>
-    </child>
-    <child>
-      <object class="GtkButton" id="btn_zout">
-        <property name="visible">True</property>
-        <property name="can-focus">True</property>
-        <property name="receives-default">True</property>
-        <property name="margin-end">5</property>
-        <property name="margin-bottom">5</property>
-        <property name="always-show-image">True</property>
-        <child>
-          <object class="GtkImage">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="pixbuf">minus.png</property>
-          </object>
-        </child>
-      </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">1</property>
-      </packing>
     </child>
   </object>
 </interface>
