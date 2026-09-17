@@ -103,6 +103,7 @@ void load_openbox_config (void)
                 if (strstr (line, "Screen")) continue;
                 if (!strstr (line, " connected")) continue;
                 mon++;
+                if (mon >= MAX_MONS) break;
                 if (strstr (line, "primary")) mons[mon].primary = TRUE;
                 cptr = strtok (line, " ");
                 mons[mon].name = g_strdup (cptr);
@@ -124,6 +125,7 @@ void load_openbox_config (void)
                     mons[mon].height = i;
                 }
             }
+            else if (mon < 0) continue;
             else if (line[4] != ' ')
             {
                 inter = FALSE;

@@ -120,6 +120,7 @@ void load_labwc_config (void)
             if (line[0] != ' ')
             {
                 mon++;
+                if (mon >= MAX_MONS) break;
                 cptr = line;
                 while (*cptr != ' ') cptr++;
                 *cptr = 0;
@@ -141,6 +142,7 @@ void load_labwc_config (void)
                     add_mode (mon, 3840, 2160, 0);
                 }
             }
+            else if (mon < 0) continue;
             else if (line[2] != ' ')
             {
                 if (strstr (line, "Position"))
@@ -277,8 +279,12 @@ static int write_config (FILE *fp)
 
 static void merge_configs (const char *infile, const char *outfile)
 {
-    FILE *finp = fopen (infile, "r");
-    FILE *foutp = fopen (outfile, "w");
+    FILE *finp, *foutp;
+
+    foutp = fopen (outfile, "w");
+    if (!foutp) return;
+
+    finp = fopen (infile, "r");
 
     // write the profile for this config
     int nmons = write_config (foutp);
@@ -414,6 +420,7 @@ static void read_touchscreen_xml (char *filename)
             mode = MODE_NONE;
             for (attr = node->properties; attr; attr = attr->next)
             {
+                if (!attr->children || !attr->children->content) continue;
                 cont = attr->children->content;
                 if (!xmlStrcmp (attr->name, XC ("deviceName")))
                     dev = g_strdup ((char *) cont);
