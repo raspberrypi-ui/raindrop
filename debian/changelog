@@ -1,3 +1,9 @@
+raindrop (1.21) trixie; urgency=medium
+
+  * Minor robustness fixes for init
+
+ -- Simon Long <simon@raspberrypi.com>  Thu, 17 Sep 2026 15:54:43 +0100
+
 raindrop (1.20) trixie; urgency=medium
 
   * Improvements to robustness of revert process
