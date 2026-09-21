@@ -1,3 +1,9 @@
+raindrop (1.22) trixie; urgency=medium
+
+  * Remove standalone build
+
+ -- Simon Long <simon@raspberrypi.com>  Mon, 21 Sep 2026 11:55:45 +0100
+
 raindrop (1.21) trixie; urgency=medium
 
   * Minor robustness fixes for init
