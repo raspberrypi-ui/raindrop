@@ -1,3 +1,9 @@
+raindrop (1.23) trixie; urgency=medium
+
+  * Update Japanese translation
+
+ -- Simon Long <simon@raspberrypi.com>  Tue, 22 Sep 2026 07:40:59 +0100
+
 raindrop (1.22) trixie; urgency=medium
 
   * Remove standalone build
