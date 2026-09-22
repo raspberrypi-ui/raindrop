@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: arandr\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-02 22:13+0900\n"
-"PO-Revision-Date: 2025-10-02 23:00+0900\n"
+"POT-Creation-Date: 2026-09-22 12:37+0900\n"
+"PO-Revision-Date: 2026-09-22 12:44+0900\n"
 "Last-Translator: Akira Ouchi <akkiesoft@marokun.net>\n"
 "Language-Team: Japanese <https://hosted.weblate.org/projects/arandr/"
 "translations/ja/>\n"
@@ -20,63 +20,71 @@ msgstr ""
 "X-Generator: Poedit 3.6\n"
 "X-Launchpad-Export-Date: 2011-12-13 05:49+0000\n"
 
-#: src/raindrop.c:465
+#: src/raindrop.c:423
+msgid "Fractional scalings cannot be used at this resolution"
+msgstr "この解像度では、小数点のスケーリングは使用できません"
+
+#: src/raindrop.c:522
 msgid "Active"
 msgstr "アクティブ"
 
-#: src/raindrop.c:478
+#: src/raindrop.c:535
 msgid "Primary"
 msgstr "プライマリ"
 
-#: src/raindrop.c:512
+#: src/raindrop.c:569
 msgid "Resolution"
 msgstr "解像度"
 
-#: src/raindrop.c:518
+#: src/raindrop.c:575
 msgid "Frequency"
 msgstr "周波数"
 
-#: src/raindrop.c:525
+#: src/raindrop.c:582
 msgid "Normal"
 msgstr "通常"
 
-#: src/raindrop.c:526
+#: src/raindrop.c:583
 msgid "Left"
 msgstr "左"
 
-#: src/raindrop.c:527
+#: src/raindrop.c:584
 msgid "Inverted"
 msgstr "逆さ"
 
-#: src/raindrop.c:528
+#: src/raindrop.c:585
 msgid "Right"
 msgstr "右"
 
-#: src/raindrop.c:529
+#: src/raindrop.c:586
 msgid "Orientation"
 msgstr "向き"
 
-#: src/raindrop.c:540
+#: src/raindrop.c:597
+msgid "Scaling"
+msgstr "スケーリング"
+
+#: src/raindrop.c:609
 msgid "Mouse Emulation"
 msgstr "マウスエミュレーション"
 
-#: src/raindrop.c:545
+#: src/raindrop.c:614
 msgid "Multitouch"
 msgstr "マルチタッチ"
 
-#: src/raindrop.c:550
+#: src/raindrop.c:619
 msgid "Mode"
 msgstr "モード"
 
-#: src/raindrop.c:567
+#: src/raindrop.c:636
 msgid "Touchscreen"
 msgstr "タッチ画面"
 
-#: src/raindrop.c:585
+#: src/raindrop.c:654
 msgid "Brightness"
 msgstr "明るさ"
 
-#: src/raindrop.c:634
+#: src/raindrop.c:703
 #, c-format
 msgid ""
 "Screen updated. Click 'OK' if is this is correct, or 'Cancel' to revert to "
@@ -89,46 +97,44 @@ msgstr ""
 "\n"
 "%d 秒後に元に戻します。"
 
-#: src/raindrop.c:1171
+#: src/raindrop.c:1282
 msgctxt "tab"
 msgid "Screens"
 msgstr "画面"
 
-#: data/raindrop.ui:7 data/raindrop.ui:260 data/raindrop.desktop.in:3
-msgid "Screen Configuration"
-msgstr "画面の構成"
-
-#: data/raindrop.ui:53
+#: data/raindrop.ui:51
 msgid "_Screens"
 msgstr "画面(_S)"
 
-#: data/raindrop.ui:88
+#: data/raindrop.ui:85
 msgid "_Identify"
 msgstr "識別(_I)"
 
-#: data/raindrop.ui:104
-msgid "_Close"
-msgstr "閉じる(_C)"
-
-#: data/raindrop.ui:118
+#: data/raindrop.ui:100
 msgid "_Undo"
 msgstr "元に戻す(_U)"
 
-#: data/raindrop.ui:132
+#: data/raindrop.ui:114
 msgid "_Apply"
 msgstr "適用(_A)"
 
-#: data/raindrop.ui:219
+#: data/raindrop.ui:251
 msgid "_Cancel"
 msgstr "キャンセル(_C)"
 
-#: data/raindrop.ui:234
+#: data/raindrop.ui:266
 msgid "_OK"
 msgstr "_OK"
 
-#: data/raindrop.desktop.in:4
-msgid "Configure monitor arrangement, scaling and orientation"
-msgstr "モニターの配置、スケーリング、向きを構成します"
+#: data/raindrop.ui:292
+msgid "Screen Configuration"
+msgstr "画面の構成"
+
+#~ msgid "_Close"
+#~ msgstr "閉じる(_C)"
+
+#~ msgid "Configure monitor arrangement, scaling and orientation"
+#~ msgstr "モニターの配置、スケーリング、向きを構成します"
 
 #~ msgid "_Layout"
 #~ msgstr "レイアウト(_L)"
