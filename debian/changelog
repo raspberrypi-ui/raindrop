@@ -1,3 +1,9 @@
+raindrop (1.24) trixie; urgency=medium
+
+  * Update system files at end of confirm dialog, not at close
+
+ -- Simon Long <simon@raspberrypi.com>  Mon, 28 Sep 2026 08:57:09 +0100
+
 raindrop (1.23) trixie; urgency=medium
 
   * Update Japanese translation

@@ -113,7 +113,7 @@ static gboolean scroll (GtkWidget *, GdkEventScroll *ev, gpointer);
 static void gesture_pressed (GtkGestureLongPress *, gdouble x, gdouble y, gpointer);
 static void gesture_end (GtkGestureLongPress *, GdkEventSequence *, gpointer);
 static void handle_apply (GtkButton *, gpointer);
-static void handle_undo (GtkButton *, gpointer);
+static void handle_undo (GtkButton *btn, gpointer);
 static void handle_zoom (GtkButton *, gpointer data);
 static void handle_menu (GtkButton *btn, gpointer);
 static gboolean hide_ids (gpointer);
@@ -717,6 +717,7 @@ static void handle_ok (GtkButton *, gpointer)
 {
     g_source_remove (tid);
     gtk_widget_destroy (conf);
+    wm_fn.update_system_config ();
 }
 
 static gboolean revert_timeout (gpointer)
@@ -1013,10 +1014,11 @@ static void handle_apply (GtkButton *, gpointer)
     show_confirm_dialog ();
 }
 
-static void handle_undo (GtkButton *, gpointer)
+static void handle_undo (GtkButton *btn, gpointer)
 {
     wm_fn.revert_config ();
     wm_fn.revert_touchscreens ();
+    if (btn) wm_fn.update_system_config ();
 
     wm_fn.reload_config ();
     wm_fn.reload_touchscreens ();
@@ -1308,7 +1310,6 @@ gboolean reboot_needed (void)
 {
     save_scale ();
 
-    if (gtk_widget_get_sensitive (undo)) wm_fn.update_system_config ();
     return FALSE;
 }
 
