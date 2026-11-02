@@ -54,6 +54,7 @@ extern wm_functions_t openbox_dfunctions;
 
 static GtkBuilder *builder;
 static GtkWidget *da, *main_dlg, *undo, *zin, *zout, *conf, *clbl, *cpb, *ident, *overlay, *zooms;
+static GtkWidget *resolution, *frequency, *scaling;
 static GtkWidget *id[MAX_MONS], *lbl[MAX_MONS];
 
 monitor_t mons[MAX_MONS];
@@ -62,6 +63,7 @@ static monitor_t bmons[MAX_MONS];
 GList *touchscreens;
 
 static int mousex, mousey, screenw, screenh, curmon, scale, rev_time, tid;
+static int selmon = -1;
 static gboolean pressed;
 static double press_x, press_y;
 static wm_type wm;
@@ -80,6 +82,7 @@ static void clear_config (gboolean first);
 static gint mode_compare (gconstpointer a, gconstpointer b);
 static void sort_modes (void);
 static void draw (GtkDrawingArea *, cairo_t *cr, gpointer);
+static void update_settings (void);
 static void check_frequency (int mon);
 static void set_resolution (GtkMenuItem *item, gpointer data);
 static void add_resolution (GtkWidget *menu, long mon, int width, int height, gboolean inter);
@@ -250,6 +253,9 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
     GdkRGBA bg = { 0.25, 0.25, 0.25, 1.0 };
     GdkRGBA fg = { 1.0, 1.0, 1.0, 0.75 };
     GdkRGBA bk = { 0.0, 0.0, 0.0, 1.0 };
+    GdkRGBA selected = { 0.2, 0.4, 0.8, 1.0 };
+
+    gtk_style_context_lookup_color (gtk_widget_get_style_context (GTK_WIDGET (da)), "theme_selected_bg_color", &selected);
 
     screenw = gtk_widget_get_allocated_width (GTK_WIDGET (da));
     screenh = gtk_widget_get_allocated_height (GTK_WIDGET (da));
@@ -269,11 +275,13 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
         cairo_fill (cr);
 
         // border
-        gdk_cairo_set_source_rgba (cr, &bk);
+        gdk_cairo_set_source_rgba (cr, m == selmon ? &selected : &bk);
+        cairo_set_line_width (cr, m == selmon ? 3.0 : 2.0);
         cairo_rectangle (cr, SCALE(mons[m].x), SCALE(mons[m].y), SCALE(screen_w (mons[m])), SCALE(screen_h (mons[m])));
         cairo_stroke (cr);
 
         // text label
+        gdk_cairo_set_source_rgba (cr, &bk);
         cairo_save (cr);
         font = pango_font_description_from_string ("sans");
         charwid = SCALE (mons[m].width / mons[m].scale) / strlen (mons[m].name);
@@ -307,6 +315,73 @@ static void draw (GtkDrawingArea *da, cairo_t *cr, gpointer)
         pango_font_description_free (font);
         cairo_restore (cr);
     }
+}
+
+/*----------------------------------------------------------------------------*/
+/* Display settings */
+/*----------------------------------------------------------------------------*/
+
+static void update_settings (void)
+{
+    GtkWidget *menu, *item, *submenu;
+    GtkWidget *buttons[] = { resolution, frequency, scaling };
+    const char *names[] = { "Resolution", "Frequency", "Scaling" };
+    GList *list, *node;
+    char *text;
+    int m;
+
+    if (!resolution) return;
+    if (selmon < 0 || mons[selmon].modes == NULL || mons[selmon].enabled == FALSE)
+    {
+        selmon = -1;
+        for (m = 0; m < MAX_MONS; m++)
+        {
+            if (mons[m].modes && mons[m].enabled)
+            {
+                selmon = m;
+                break;
+            }
+        }
+    }
+
+    for (m = 0; m < 3; m++)
+    {
+        gtk_menu_button_set_popup (GTK_MENU_BUTTON (buttons[m]), NULL);
+        gtk_widget_set_sensitive (buttons[m], FALSE);
+        gtk_button_set_label (GTK_BUTTON (buttons[m]), "");
+    }
+    if (selmon == -1) return;
+
+    text = g_strdup_printf ("%dx%d%s", mons[selmon].width, mons[selmon].height, mons[selmon].interlaced ? "i" : "");
+    gtk_button_set_label (GTK_BUTTON (resolution), text);
+    g_free (text);
+    text = g_strdup_printf ("%.3fHz", mons[selmon].freq);
+    gtk_button_set_label (GTK_BUTTON (frequency), text);
+    g_free (text);
+    text = g_strdup_printf ("x %0.1f", mons[selmon].scale);
+    gtk_button_set_label (GTK_BUTTON (scaling), text);
+    g_free (text);
+
+    // use the same submenus and handlers as the monitor menu
+    menu = create_menu (selmon);
+    list = gtk_container_get_children (GTK_CONTAINER (menu));
+    for (node = list; node; node = node->next)
+    {
+        item = node->data;
+        for (m = 0; m < 3; m++)
+        {
+            if (g_strcmp0 (gtk_menu_item_get_label (GTK_MENU_ITEM (item)), _(names[m]))) continue;
+            submenu = gtk_menu_item_get_submenu (GTK_MENU_ITEM (item));
+            if (submenu == NULL) continue;
+            g_object_ref (submenu);
+            gtk_menu_item_set_submenu (GTK_MENU_ITEM (item), NULL);
+            gtk_menu_button_set_popup (GTK_MENU_BUTTON (buttons[m]), submenu);
+            g_object_unref (submenu);
+            gtk_widget_set_sensitive (buttons[m], TRUE);
+        }
+    }
+    g_list_free (list);
+    gtk_widget_destroy (menu);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -349,6 +424,7 @@ static void set_resolution (GtkMenuItem *item, gpointer data)
         check_frequency (mon);
         mons[mon].scale = 1.0;
     }
+    update_settings ();
     gtk_widget_queue_draw (da);
 }
 
@@ -366,6 +442,7 @@ static void set_frequency (GtkMenuItem *item, gpointer data)
 {
     int mon = (long) data;
     sscanf (gtk_menu_item_get_label (item), "%fHz", &(mons[mon].freq));
+    update_settings ();
 }
 
 static void add_frequency (GtkWidget *menu, long mon, float freq)
@@ -400,6 +477,7 @@ static void set_scaling (GtkMenuItem *item, gpointer data)
 {
     int mon = (long) data;
     sscanf (gtk_widget_get_name (GTK_WIDGET (item)), "x %f", &(mons[mon].scale));
+    update_settings ();
     gtk_widget_queue_draw (da);
 }
 
@@ -431,6 +509,7 @@ static void set_enable (GtkCheckMenuItem *item, gpointer data)
 {
     int mon = (long) data;
     mons[mon].enabled = gtk_check_menu_item_get_active (item);
+    update_settings ();
     gtk_widget_queue_draw (da);
 }
 
@@ -899,6 +978,13 @@ static gboolean button_press_event (GtkWidget *, GdkEventButton *ev, gpointer)
         }
     }
 
+    if (ev->button == 1 && curmon != -1)
+    {
+        selmon = curmon;
+        update_settings ();
+        gtk_widget_queue_draw (da);
+    }
+
     if (ev->button == 3 && curmon != -1)
     {
         menu = create_menu (curmon);
@@ -1009,6 +1095,7 @@ static void handle_apply (GtkButton *, gpointer)
 
     wm_fn.load_touchscreens ();
 
+    update_settings ();
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, TRUE);
     show_confirm_dialog ();
@@ -1033,6 +1120,7 @@ static void handle_undo (GtkButton *btn, gpointer)
 
     wm_fn.load_touchscreens ();
 
+    update_settings ();
     gtk_widget_queue_draw (da);
     gtk_widget_set_sensitive (undo, FALSE);
 }
@@ -1208,6 +1296,11 @@ static void init_config (void)
 
     // ensure the config file reflects the current state, or undo won't work...
     wm_fn.init_config ();
+
+    resolution = (GtkWidget *) gtk_builder_get_object (builder, "resolution");
+    frequency = (GtkWidget *) gtk_builder_get_object (builder, "frequency");
+    scaling = (GtkWidget *) gtk_builder_get_object (builder, "scaling");
+    update_settings ();
 
     curmon = -1;
     da = (GtkWidget *) gtk_builder_get_object (builder, "da");
